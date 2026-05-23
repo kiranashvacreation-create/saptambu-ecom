@@ -1243,6 +1243,13 @@ export function VideoSequenceHome() {
           </div>
         ))}
 
+        <Link
+          href="/collections/all"
+          className="essence-product-cta focus-ring pointer-events-none absolute left-1/2 top-[calc(50%+32vh)] z-[46] -translate-x-1/2 translate-y-3 rounded-full border border-[#d2a85c]/55 bg-[#050609]/52 px-5 py-3 font-mono text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-[#f4ead7]/90 opacity-0 shadow-[0_0_34px_rgba(210,168,92,0.14)] backdrop-blur-md transition duration-500 hover:border-[#f0d79c] hover:bg-[#d2a85c] hover:text-[#050609] sm:px-6 md:top-[calc(50%+34vh)]"
+        >
+          Explore Products
+        </Link>
+
         <div
           ref={transitionVeilRef}
           data-transition-veil
@@ -1326,6 +1333,12 @@ export function VideoSequenceHome() {
 
         :global(.saptambhu-veil-active) {
           animation: saptambhu-soft-veil 1.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        :global(section[data-active-step="11"] .essence-product-cta) {
+          opacity: 1;
+          pointer-events: auto;
+          transform: translate(-50%, 0);
         }
 
         @keyframes saptambhu-soft-wipe {
