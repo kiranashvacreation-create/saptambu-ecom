@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Saptambu Custom Store
 
-## Getting Started
+Fully custom Railway-hosted ecommerce app for Kiranashva Creation/Saptambu.
 
-First, run the development server:
+## Stack
+
+- Next.js App Router, TypeScript, Tailwind CSS
+- PostgreSQL on Railway
+- Prisma ORM
+- Razorpay checkout
+- Cloudinary product image uploads
+- SMTP email notifications
+
+## Local Setup
+
+1. Copy `.env.example` to `.env`.
+2. Fill admin, Razorpay, Cloudinary, and SMTP values.
+3. Start the local Postgres server and seed the scanned Shopify catalog:
+
+```bash
+npm run local:setup
+```
+
+4. Start development:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Important Commands
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build        # production build
+npm run lint         # eslint
+npm run local:db     # start local Postgres in Docker
+npm run local:setup  # start local Postgres, push schema, seed catalog
+npm run db:push      # push Prisma schema to Postgres
+npm run db:seed      # import current 55 Shopify products and create admin
+npm run railway:setup
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Admin
 
-## Learn More
+Admin lives at `/admin`.
 
-To learn more about Next.js, take a look at the following resources:
+The seed command creates one admin user from:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The admin can manage products, stock, categories, coupon codes, orders, delivery messages, and store settings.
 
-## Deploy on Vercel
+## Deployment Notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Railway should provide `DATABASE_URL` from the Postgres plugin. Replace the local `DATABASE_URL` in Railway env vars, then run `npm run railway:setup` once after setting env vars to create tables and import products. Product images uploaded after launch go to Cloudinary; Railway disk is not used for durable uploads.
