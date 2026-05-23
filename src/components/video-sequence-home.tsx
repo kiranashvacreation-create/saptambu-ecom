@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -419,15 +419,14 @@ export function VideoSequenceHome() {
   const bottleCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const cursorDotRef = useRef<HTMLDivElement | null>(null);
   const cursorRingRef = useRef<HTMLDivElement | null>(null);
-  const loaderMarks = useMemo(() => Array.from({ length: 7 }, (_, index) => index), []);
 
   useEffect(() => {
     const root = rootRef.current;
-    const track = trackRef.current;
-    const transitionBar = transitionBarRef.current;
-    const transitionVeil = transitionVeilRef.current;
-    const progressBar = progressRef.current;
-    const canvas = bottleCanvasRef.current;
+    const track = trackRef.current ?? root?.querySelector<HTMLDivElement>("[data-video-track]");
+    const transitionBar = transitionBarRef.current ?? root?.querySelector<HTMLDivElement>("[data-transition-bar]");
+    const transitionVeil = transitionVeilRef.current ?? root?.querySelector<HTMLDivElement>("[data-transition-veil]");
+    const progressBar = progressRef.current ?? root?.querySelector<HTMLDivElement>("[data-sequence-progress]");
+    const canvas = bottleCanvasRef.current ?? root?.querySelector<HTMLCanvasElement>("[data-bottle-canvas]");
     if (!root || !track || !transitionBar || !transitionVeil || !progressBar || !canvas) return;
 
     const previousBodyOverflow = document.body.style.overflow;
@@ -462,9 +461,24 @@ export function VideoSequenceHome() {
     const videoTweens = new Map<HTMLVideoElement, gsap.core.Tween>();
     const readyVideoIndexes = new Set<number>();
     const videoReadyPromises = new Map<number, Promise<void>>();
+    const loadingParts = {
+      bottle: 0,
+      setup: 0,
+      video: 0,
+    };
 
-    const setLoadProgress = (value: number) => {
-      setLoaderProgress((current) => Math.max(current, clamp(value, 0, 100)));
+    const syncLoadProgress = () => {
+      const nextProgress =
+        loadingParts.setup * 8 +
+        loadingParts.video * 42 +
+        loadingParts.bottle * 50;
+      setLoaderProgress((current) => Math.max(current, clamp(nextProgress, 0, 100)));
+    };
+
+    const setLoadPart = (part: keyof typeof loadingParts, value: number) => {
+      if (disposed) return;
+      loadingParts[part] = Math.max(loadingParts[part], clamp(value, 0, 1));
+      syncLoadProgress();
     };
 
     const scene = new THREE.Scene();
@@ -850,7 +864,7 @@ export function VideoSequenceHome() {
       setTargetPose(stepTimeline[activeStep]);
     };
 
-    const prepareVideo = (index: number, progressValue?: number) => {
+    const prepareVideo = (index: number, onProgress?: (progress: number) => void) => {
       const video = videoNodes[index];
       if (!video) return Promise.resolve();
       if (readyVideoIndexes.has(index)) return Promise.resolve();
@@ -859,16 +873,30 @@ export function VideoSequenceHome() {
 
       const promise = new Promise<void>((resolve) => {
         let resolved = false;
+        const updateProgress = () => {
+          if (!onProgress || !video.duration || Number.isNaN(video.duration) || video.buffered.length === 0) return;
+          const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+          onProgress(clamp(bufferedEnd / video.duration, 0.06, 0.96));
+        };
+
+        const cleanup = () => {
+          video.removeEventListener("loadeddata", ready);
+          video.removeEventListener("canplay", ready);
+          video.removeEventListener("error", ready);
+          video.removeEventListener("progress", updateProgress);
+        };
+
         const ready = () => {
           if (resolved) return;
           resolved = true;
+          cleanup();
           readyVideoIndexes.add(index);
           video.pause();
           video.muted = true;
           video.playsInline = true;
           const firstStepForVideo = stepTimeline.find((step) => step.videoIndex === index);
           setVideoTime(video, firstStepForVideo?.anchor ?? 0, true);
-          if (progressValue) setLoadProgress(progressValue);
+          onProgress?.(1);
           resolve();
         };
 
@@ -879,15 +907,17 @@ export function VideoSequenceHome() {
 
         video.addEventListener("loadeddata", ready, { once: true });
         video.addEventListener("canplay", ready, { once: true });
+        video.addEventListener("error", ready, { once: true });
+        video.addEventListener("progress", updateProgress);
         video.load();
-        window.setTimeout(ready, index === 0 ? 3200 : 5200);
+        window.setTimeout(ready, index === 0 ? 9000 : 5200);
       });
 
       videoReadyPromises.set(index, promise);
       return promise;
     };
 
-    const initBottleLayer = async () => {
+    const initBottleLayer = (onProgress?: (progress: number) => void) => {
       renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, canvas });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 768 ? 1 : 1.16));
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -958,39 +988,57 @@ export function VideoSequenceHome() {
       flowMaterial.userData.baseOpacity = 0.16;
       essenceMaterials.push(flowMaterial);
 
-      setLoadProgress(58);
+      onProgress?.(0.04);
 
-      void new GLTFLoader().loadAsync(BOTTLE_MODEL_SRC).then((gltf) => {
-        if (disposed) return;
-        bottleGroup = new THREE.Group();
-        const model = gltf.scene;
-        const box = new THREE.Box3().setFromObject(model);
-        const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-
-        model.position.sub(center);
-        model.scale.setScalar(2.55 / maxDim);
-        model.traverse((child) => {
-          const mesh = child as THREE.Mesh;
-          if (!mesh.isMesh) return;
-          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-          materials.forEach((material) => {
-            if (material && "envMapIntensity" in material) {
-              material.envMapIntensity = 1.25;
-              material.needsUpdate = true;
+      return new Promise<void>((resolve) => {
+        new GLTFLoader().load(
+          BOTTLE_MODEL_SRC,
+          (gltf) => {
+            if (disposed) {
+              resolve();
+              return;
             }
-          });
-        });
+            bottleGroup = new THREE.Group();
+            const model = gltf.scene;
+            const box = new THREE.Box3().setFromObject(model);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
 
-        bottleGroup.add(model);
-        bottleGroup.visible = true;
-        scene.add(bottleGroup);
-        commitBottlePose(stepTimeline[activeStep]);
-        setLoadProgress(82);
-      }).catch((error) => {
-        console.warn("Saptambu bottle failed to load; continuing with video journey.", error);
-        setLoadProgress(82);
+            model.position.sub(center);
+            model.scale.setScalar(2.55 / maxDim);
+            model.traverse((child) => {
+              const mesh = child as THREE.Mesh;
+              if (!mesh.isMesh) return;
+              const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+              materials.forEach((material) => {
+                if (material && "envMapIntensity" in material) {
+                  material.envMapIntensity = 1.25;
+                  material.needsUpdate = true;
+                }
+              });
+            });
+
+            bottleGroup.add(model);
+            bottleGroup.visible = true;
+            scene.add(bottleGroup);
+            commitBottlePose(stepTimeline[activeStep]);
+            onProgress?.(1);
+            resolve();
+          },
+          (event) => {
+            if (!event.total) {
+              onProgress?.(0.18);
+              return;
+            }
+            onProgress?.(clamp(event.loaded / event.total, 0.04, 0.98));
+          },
+          (error) => {
+            console.warn("Saptambu bottle failed to load; continuing with video journey.", error);
+            onProgress?.(1);
+            resolve();
+          },
+        );
       });
     };
 
@@ -1051,16 +1099,21 @@ export function VideoSequenceHome() {
 
     updateRootDataset(0);
     setStaticStep(0, true);
-    setLoadProgress(10);
-    void Promise.all([prepareVideo(0, 44), initBottleLayer().then(() => setLoadProgress(68))])
+    setLoadPart("setup", 1);
+    void Promise.all([
+      prepareVideo(0, (progress) => setLoadPart("video", progress)),
+      initBottleLayer((progress) => setLoadPart("bottle", progress)),
+    ])
       .then(() => {
-        setLoadProgress(100);
+        setLoadPart("video", 1);
+        setLoadPart("bottle", 1);
         finishLoading();
-        void Promise.all(videoNodes.slice(1).map((_, index) => prepareVideo(index + 1, 86 + index * 4)));
+        void Promise.all(videoNodes.slice(1).map((_, index) => prepareVideo(index + 1)));
       })
       .catch((error) => {
         console.warn("Saptambu homepage asset load failed", error);
-        setLoadProgress(100);
+        setLoadPart("video", 1);
+        setLoadPart("bottle", 1);
         finishLoading();
       });
 
@@ -1104,7 +1157,7 @@ export function VideoSequenceHome() {
       style={rootStyle}
     >
       <div className="relative h-screen overflow-hidden bg-black">
-        <div ref={trackRef} className="absolute inset-0 h-full w-full">
+        <div ref={trackRef} className="absolute inset-0 h-full w-full" data-video-track>
           {videos.map((video, index) => (
             <div
               className="absolute inset-0 h-full w-full overflow-hidden bg-black"
@@ -1135,7 +1188,7 @@ export function VideoSequenceHome() {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[24vh] bg-gradient-to-t from-[#050609]/88 via-[#050609]/28 to-transparent" />
         <div className="pointer-events-none absolute inset-0 z-10 opacity-[0.022] mix-blend-overlay [background-image:url('data:image/svg+xml,%3Csvg_xmlns=%22http://www.w3.org/2000/svg%22_width=%22300%22_height=%22300%22%3E%3Cfilter_id=%22n%22%3E%3CfeTurbulence_type=%22fractalNoise%22_baseFrequency=%220.85%22_numOctaves=%224%22_stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect_width=%22300%22_height=%22300%22_filter=%22url(%23n)%22/%3E%3C/svg%3E')] [background-size:200px_200px]" />
 
-        <canvas ref={bottleCanvasRef} className="pointer-events-none fixed inset-0 z-20 h-full w-full opacity-0" />
+        <canvas ref={bottleCanvasRef} className="pointer-events-none fixed inset-0 z-20 h-full w-full opacity-0" data-bottle-canvas />
 
         <Link
           href="/collections/all"
@@ -1192,6 +1245,7 @@ export function VideoSequenceHome() {
 
         <div
           ref={transitionVeilRef}
+          data-transition-veil
           className="pointer-events-none absolute inset-0 z-[49] opacity-0"
           style={{
             background:
@@ -1200,6 +1254,7 @@ export function VideoSequenceHome() {
         />
         <div
           ref={transitionBarRef}
+          data-transition-bar
           className="pointer-events-none absolute left-1/2 top-0 z-[51] h-full w-px origin-center -translate-x-1/2 scale-x-100 bg-[#d2a85c]/78 opacity-40 shadow-[0_0_42px_rgba(210,168,92,0.42)]"
         />
 
@@ -1207,7 +1262,11 @@ export function VideoSequenceHome() {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[55] h-[5vh] bg-[#050609]" />
         <div className="pointer-events-none absolute inset-3 z-[56] border border-[#f4ead7]/34" />
         <div className="pointer-events-none absolute inset-x-3 bottom-[calc(5vh+0.8rem)] z-[57] h-px bg-[#d2a85c]/18">
-          <div ref={progressRef} className="h-full origin-left scale-x-0 bg-[linear-gradient(90deg,#d2a85c,#f0d79c,transparent)]" />
+          <div
+            ref={progressRef}
+            className="h-full origin-left scale-x-0 bg-[linear-gradient(90deg,#d2a85c,#f0d79c,transparent)]"
+            data-sequence-progress
+          />
         </div>
 
         <div className="pointer-events-none absolute bottom-[calc(5vh+1.45rem)] left-6 z-[57] grid h-10 w-10 place-items-center rounded-full border border-[#f4ead7]/18 bg-black/22 font-mono text-xs text-[#f4ead7]/86 shadow-[0_0_18px_rgba(0,0,0,0.45)]">
@@ -1230,15 +1289,6 @@ export function VideoSequenceHome() {
         >
           <div className="flex flex-col items-center gap-8">
             <div className="font-serif text-2xl font-light uppercase tracking-[0.8em] text-[#d2a85c] md:text-4xl">Saptambu</div>
-            <div className="flex gap-3">
-              {loaderMarks.map((mark) => (
-                <span
-                  className="h-px w-9 animate-[saptambhu-loader_1.5s_ease-in-out_infinite] bg-[#d2a85c]/70"
-                  key={mark}
-                  style={{ animationDelay: `${mark * 0.09}s` }}
-                />
-              ))}
-            </div>
             <div className="h-px w-[min(320px,58vw)] overflow-hidden bg-[#d2a85c]/18">
               <div
                 className="h-full origin-left bg-[linear-gradient(90deg,#d2a85c,#f0d79c)] transition-transform duration-300 ease-out"
