@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
-import { updateOrderDeliveryAction } from "@/app/admin/actions";
+import { deleteOrderAction, updateOrderDeliveryAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/admin-shell";
 import { Field, inputClass, textareaClass } from "@/components/admin-field";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { requireAdmin } from "@/lib/auth";
 import { requireDb } from "@/lib/db";
 import { formatMoney, toNumber } from "@/lib/money";
@@ -99,6 +100,17 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               ))}
             </div>
           </div>
+          <form action={deleteOrderAction} className="grid gap-3 rounded-lg border border-red-200 bg-red-50 p-5">
+            <input type="hidden" name="id" value={order.id} />
+            <h2 className="text-xl font-semibold text-red-900">Delete order</h2>
+            <p className="text-sm text-red-800">This permanently removes the order, items, and delivery history.</p>
+            <ConfirmSubmitButton
+              className="focus-ring h-10 rounded-md bg-red-700 px-4 text-sm font-semibold text-white"
+              confirmMessage={`Permanently delete order ${order.orderNumber}? This cannot be undone.`}
+            >
+              Delete order
+            </ConfirmSubmitButton>
+          </form>
         </aside>
       </div>
     </AdminShell>

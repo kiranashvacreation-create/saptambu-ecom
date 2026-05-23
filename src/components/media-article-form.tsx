@@ -1,7 +1,8 @@
 import type { MediaArticle } from "@/generated/prisma/client";
-import { archiveMediaArticleAction, saveMediaArticleAction } from "@/app/admin/actions";
+import { archiveMediaArticleAction, deleteMediaArticleAction, saveMediaArticleAction } from "@/app/admin/actions";
 import { Field, inputClass, textareaClass } from "@/components/admin-field";
 import { AutoSlugFormController } from "@/components/auto-slug-form-controller";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { RichTextEditor } from "@/components/rich-text-editor";
 
@@ -70,9 +71,18 @@ export function MediaArticleForm({ article }: { article?: MediaArticle }) {
           Paste a URL or upload to Cloudinary. The image appears on the media coverage page and article detail page.
         </p>
         {article ? (
-          <button formAction={archiveMediaArticleAction} className="focus-ring h-10 rounded-md bg-[#9b2f22] px-4 text-sm font-semibold text-white">
-            Archive article
-          </button>
+          <div className="grid gap-3 rounded-md border border-red-200 bg-red-50 p-3">
+            <button formAction={archiveMediaArticleAction} className="focus-ring h-10 rounded-md bg-[#9b2f22] px-4 text-sm font-semibold text-white">
+              Archive article
+            </button>
+            <ConfirmSubmitButton
+              className="focus-ring h-10 rounded-md bg-red-700 px-4 text-sm font-semibold text-white"
+              confirmMessage={`Permanently delete "${article.title}"?`}
+              formAction={deleteMediaArticleAction}
+            >
+              Delete article
+            </ConfirmSubmitButton>
+          </div>
         ) : null}
       </aside>
     </form>

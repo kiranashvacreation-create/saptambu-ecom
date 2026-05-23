@@ -150,6 +150,28 @@ export async function adjustStockAction(formData: FormData) {
   redirect(`/admin/products/${productId}`);
 }
 
+export async function deleteProductAction(formData: FormData) {
+  await requireAdmin();
+  const db = requireDb();
+  const id = text(formData, "id");
+  const product = await db.product.findUnique({
+    where: { id },
+    select: { slug: true, categories: { select: { category: { select: { slug: true } } } } },
+  });
+
+  if (product) {
+    await db.product.delete({ where: { id } });
+    revalidatePath(`/products/${product.slug}`);
+    product.categories.forEach(({ category }) => revalidatePath(`/collections/${category.slug}`));
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/admin/products");
+  revalidatePath("/collections/all");
+  redirect("/admin/products");
+}
+
 export async function saveCategoryAction(formData: FormData) {
   await requireAdmin();
   const db = requireDb();
@@ -166,6 +188,23 @@ export async function saveCategoryAction(formData: FormData) {
   else await db.category.create({ data });
 
   revalidatePath("/");
+  revalidatePath("/collections/all");
+  redirect("/admin/categories");
+}
+
+export async function deleteCategoryAction(formData: FormData) {
+  await requireAdmin();
+  const db = requireDb();
+  const id = text(formData, "id");
+  const category = await db.category.findUnique({ where: { id }, select: { slug: true } });
+
+  if (category) {
+    await db.category.delete({ where: { id } });
+    revalidatePath(`/collections/${category.slug}`);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin/categories");
   revalidatePath("/collections/all");
   redirect("/admin/categories");
 }
@@ -193,6 +232,20 @@ export async function saveDiscountAction(formData: FormData) {
   if (id) await db.discountCode.update({ where: { id }, data });
   else await db.discountCode.create({ data });
 
+  redirect("/admin/discounts");
+}
+
+export async function deleteDiscountAction(formData: FormData) {
+  await requireAdmin();
+  const db = requireDb();
+  const id = text(formData, "id");
+
+  await db.$transaction([
+    db.order.updateMany({ where: { discountCodeId: id }, data: { discountCodeId: null } }),
+    db.discountCode.deleteMany({ where: { id } }),
+  ]);
+
+  revalidatePath("/admin/discounts");
   redirect("/admin/discounts");
 }
 
@@ -239,6 +292,22 @@ export async function updateOrderDeliveryAction(formData: FormData) {
 
   await sendDeliveryEmail(order, message);
   redirect(`/admin/orders/${orderId}`);
+}
+
+export async function deleteOrderAction(formData: FormData) {
+  await requireAdmin();
+  const db = requireDb();
+  const id = text(formData, "id");
+  const order = await db.order.findUnique({ where: { id }, select: { orderNumber: true } });
+
+  if (order) {
+    await db.order.delete({ where: { id } });
+    revalidatePath(`/order-confirmation/${order.orderNumber}`);
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/orders");
+  redirect("/admin/orders");
 }
 
 export async function saveSettingAction(formData: FormData) {
@@ -301,6 +370,22 @@ export async function archiveMediaArticleAction(formData: FormData) {
     where: { id },
     data: { status: "ARCHIVED" },
   });
+
+  revalidatePath("/admin/media");
+  revalidatePath("/pages/media-coverage-1");
+  redirect("/admin/media");
+}
+
+export async function deleteMediaArticleAction(formData: FormData) {
+  await requireAdmin();
+  const db = requireDb();
+  const id = text(formData, "id");
+  const article = await db.mediaArticle.findUnique({ where: { id }, select: { slug: true } });
+
+  if (article) {
+    await db.mediaArticle.delete({ where: { id } });
+    revalidatePath(`/media/${article.slug}`);
+  }
 
   revalidatePath("/admin/media");
   revalidatePath("/pages/media-coverage-1");

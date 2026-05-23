@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { deleteMediaArticleAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/admin-shell";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { requireAdmin } from "@/lib/auth";
 import { requireDb } from "@/lib/db";
 
@@ -32,18 +34,18 @@ export default async function AdminMediaPage() {
       </div>
 
       <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-white">
-        <div className="grid grid-cols-[90px_1fr_120px_120px] gap-4 border-b border-[var(--border)] bg-[#f7f0e8] px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-[#6d5f52]">
+        <div className="grid grid-cols-[90px_1fr_120px_120px_90px] gap-4 border-b border-[var(--border)] bg-[#f7f0e8] px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-[#6d5f52]">
           <span>Image</span>
           <span>Title</span>
           <span>Status</span>
           <span>Published</span>
+          <span>Action</span>
         </div>
         {articles.length ? (
           articles.map((article) => (
-            <Link
+            <div
               key={article.id}
-              href={`/admin/media/${article.id}`}
-              className="grid grid-cols-[90px_1fr_120px_120px] gap-4 border-b border-[var(--border)] px-4 py-4 text-sm transition hover:bg-[#fbf7f1]"
+              className="grid grid-cols-[90px_1fr_120px_120px_90px] gap-4 border-b border-[var(--border)] px-4 py-4 text-sm transition hover:bg-[#fbf7f1]"
             >
               <span className="block h-14 overflow-hidden rounded-md bg-[#eee4d7]">
                 {article.coverImageUrl ? (
@@ -51,13 +53,22 @@ export default async function AdminMediaPage() {
                   <img src={article.coverImageUrl} alt="" className="h-full w-full object-cover" />
                 ) : null}
               </span>
-              <span>
+              <Link href={`/admin/media/${article.id}`} className="transition hover:text-[#9b2f22]">
                 <span className="block font-semibold">{article.title}</span>
                 <span className="mt-1 block truncate text-[#6d5f52]">{article.excerpt || article.slug}</span>
-              </span>
+              </Link>
               <span>{article.status}</span>
               <span>{formatDate(article.publishedAt)}</span>
-            </Link>
+              <form action={deleteMediaArticleAction}>
+                <input type="hidden" name="id" value={article.id} />
+                <ConfirmSubmitButton
+                  className="focus-ring h-8 rounded-md border border-red-200 bg-red-50 px-2 text-xs font-semibold text-red-800"
+                  confirmMessage={`Permanently delete "${article.title}"?`}
+                >
+                  Delete
+                </ConfirmSubmitButton>
+              </form>
+            </div>
           ))
         ) : (
           <div className="px-4 py-10 text-center text-sm text-[#6d5f52]">No media articles yet.</div>

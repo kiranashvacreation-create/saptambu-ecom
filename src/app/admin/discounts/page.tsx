@@ -1,6 +1,7 @@
-import { saveDiscountAction } from "@/app/admin/actions";
+import { deleteDiscountAction, saveDiscountAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/admin-shell";
 import { Field, inputClass } from "@/components/admin-field";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { requireAdmin } from "@/lib/auth";
 import { requireDb } from "@/lib/db";
 import { formatMoney, toNumber } from "@/lib/money";
@@ -16,11 +17,20 @@ export default async function DiscountsPage() {
       <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
         <div className="rounded-lg border border-[var(--border)] bg-white">
           {discounts.map((discount) => (
-            <div key={discount.id} className="grid gap-2 border-b border-[var(--border)] p-4 last:border-0 md:grid-cols-4">
+            <div key={discount.id} className="grid gap-2 border-b border-[var(--border)] p-4 last:border-0 md:grid-cols-[1fr_100px_100px_90px_auto] md:items-center">
               <span className="font-semibold">{discount.code}</span>
               <span>{discount.type === "PERCENT" ? `${toNumber(discount.value)}%` : formatMoney(toNumber(discount.value))}</span>
               <span>{discount.isActive ? "Active" : "Inactive"}</span>
               <span>{discount.usedCount} uses</span>
+              <form action={deleteDiscountAction}>
+                <input type="hidden" name="id" value={discount.id} />
+                <ConfirmSubmitButton
+                  className="focus-ring h-9 rounded-md border border-red-200 bg-red-50 px-3 text-sm font-semibold text-red-800"
+                  confirmMessage={`Permanently delete coupon "${discount.code}"? Existing orders will keep their discount snapshot.`}
+                >
+                  Delete
+                </ConfirmSubmitButton>
+              </form>
             </div>
           ))}
           {!discounts.length ? <p className="p-4 text-sm text-[#6d5f52]">No coupons yet.</p> : null}

@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { deleteProductAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/admin-shell";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { requireAdmin } from "@/lib/auth";
 import { requireDb } from "@/lib/db";
 import { formatMoney, toNumber } from "@/lib/money";
@@ -22,23 +24,34 @@ export default async function AdminProductsPage() {
         </Link>
       </div>
       <div className="mt-4 overflow-hidden rounded-lg border border-[var(--border)] bg-white">
-        <div className="grid grid-cols-[1.5fr_110px_100px_100px] gap-4 border-b border-[var(--border)] p-4 text-sm font-semibold">
+        <div className="grid grid-cols-[1.5fr_110px_100px_100px_90px] gap-4 border-b border-[var(--border)] p-4 text-sm font-semibold">
           <span>Product</span>
           <span>Price</span>
           <span>Stock</span>
           <span>Status</span>
+          <span>Action</span>
         </div>
         {products.map((product) => (
-          <Link
+          <div
             key={product.id}
-            href={`/admin/products/${product.id}`}
-            className="grid grid-cols-[1.5fr_110px_100px_100px] gap-4 border-b border-[var(--border)] p-4 text-sm last:border-0"
+            className="grid grid-cols-[1.5fr_110px_100px_100px_90px] gap-4 border-b border-[var(--border)] p-4 text-sm last:border-0"
           >
-            <span className="font-semibold">{product.title}</span>
+            <Link href={`/admin/products/${product.id}`} className="font-semibold transition hover:text-[#9b2f22]">
+              {product.title}
+            </Link>
             <span>{formatMoney(toNumber(product.salePrice || product.price))}</span>
             <span className={product.stock <= product.lowStockThreshold ? "font-semibold text-[#9b2f22]" : ""}>{product.stock}</span>
             <span>{product.status}</span>
-          </Link>
+            <form action={deleteProductAction}>
+              <input type="hidden" name="id" value={product.id} />
+              <ConfirmSubmitButton
+                className="focus-ring h-8 rounded-md border border-red-200 bg-red-50 px-2 text-xs font-semibold text-red-800"
+                confirmMessage={`Permanently delete "${product.title}"?`}
+              >
+                Delete
+              </ConfirmSubmitButton>
+            </form>
+          </div>
         ))}
       </div>
     </AdminShell>

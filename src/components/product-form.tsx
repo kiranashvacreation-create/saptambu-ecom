@@ -1,7 +1,8 @@
 import type { Category, Product, ProductCategory, ProductImage, StockAdjustment } from "@/generated/prisma/client";
-import { adjustStockAction, saveProductAction } from "@/app/admin/actions";
+import { adjustStockAction, deleteProductAction, saveProductAction } from "@/app/admin/actions";
 import { Field, inputClass, textareaClass } from "@/components/admin-field";
 import { AutoSlugFormController } from "@/components/auto-slug-form-controller";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { toNumber } from "@/lib/money";
 
@@ -89,17 +90,30 @@ export function ProductForm({
         <button className="focus-ring h-11 rounded-md bg-[#1c6d62] px-5 font-semibold text-white">Save product</button>
       </form>
       {product ? (
-        <aside className="h-fit rounded-lg border border-[var(--border)] bg-white p-5">
-          <h2 className="text-xl font-semibold">Stock adjustment</h2>
-          <form action={adjustStockAction} className="mt-4 grid gap-3">
-            <input type="hidden" name="productId" value={product.id} />
-            <Field label="Change">
-              <input name="change" type="number" required placeholder="-2 or 10" className={inputClass} />
-            </Field>
-            <Field label="Note">
-              <input name="note" className={inputClass} />
-            </Field>
-            <button className="focus-ring h-10 rounded-md bg-[#9b2f22] px-4 text-sm font-semibold text-white">Adjust stock</button>
+        <aside className="grid h-fit gap-5">
+          <div className="rounded-lg border border-[var(--border)] bg-white p-5">
+            <h2 className="text-xl font-semibold">Stock adjustment</h2>
+            <form action={adjustStockAction} className="mt-4 grid gap-3">
+              <input type="hidden" name="productId" value={product.id} />
+              <Field label="Change">
+                <input name="change" type="number" required placeholder="-2 or 10" className={inputClass} />
+              </Field>
+              <Field label="Note">
+                <input name="note" className={inputClass} />
+              </Field>
+              <button className="focus-ring h-10 rounded-md bg-[#9b2f22] px-4 text-sm font-semibold text-white">Adjust stock</button>
+            </form>
+          </div>
+          <form action={deleteProductAction} className="grid gap-3 rounded-lg border border-red-200 bg-red-50 p-5">
+            <input type="hidden" name="id" value={product.id} />
+            <h2 className="text-xl font-semibold text-red-900">Delete product</h2>
+            <p className="text-sm text-red-800">This removes the product, images, category links, and stock history.</p>
+            <ConfirmSubmitButton
+              className="focus-ring h-10 rounded-md bg-red-700 px-4 text-sm font-semibold text-white"
+              confirmMessage={`Permanently delete "${product.title}"?`}
+            >
+              Delete product
+            </ConfirmSubmitButton>
           </form>
         </aside>
       ) : null}
