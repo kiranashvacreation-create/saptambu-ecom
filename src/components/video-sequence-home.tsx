@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import * as THREE from "three";
@@ -407,6 +408,7 @@ function progressForStep(stepIndex: number) {
 
 export function VideoSequenceHome() {
   const [isLoading, setIsLoading] = useState(true);
+  const [loaderProgress, setLoaderProgress] = useState(0);
   const rootRef = useRef<HTMLElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
@@ -454,11 +456,16 @@ export function VideoSequenceHome() {
     let renderFrame = 0;
     let renderer: THREE.WebGLRenderer | null = null;
     let rimLight: THREE.DirectionalLight | null = null;
-    let wipeCollapseTimer = 0;
     let transitionTimer = 0;
     let wipeCoverTimer = 0;
     let wipeResetTimer = 0;
     const videoTweens = new Map<HTMLVideoElement, gsap.core.Tween>();
+    const readyVideoIndexes = new Set<number>();
+    const videoReadyPromises = new Map<number, Promise<void>>();
+
+    const setLoadProgress = (value: number) => {
+      setLoaderProgress((current) => Math.max(current, clamp(value, 0, 100)));
+    };
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -670,55 +677,40 @@ export function VideoSequenceHome() {
       cursorFrame = window.requestAnimationFrame(tickCursor);
     };
 
-    const animateSeparator = (onCovered?: () => void) => {
+    const animateSeparator = (onCovered?: () => void | Promise<void>) => {
       window.clearTimeout(wipeCoverTimer);
-      window.clearTimeout(wipeCollapseTimer);
       window.clearTimeout(wipeResetTimer);
-      transitionBar.classList.remove("saptambhu-wipe-active");
-      transitionVeil.classList.remove("saptambhu-veil-active");
-      transitionBar.style.animation = "none";
       transitionVeil.style.animation = "none";
+      transitionBar.style.animation = "none";
       transitionBar.style.transition = "none";
       transitionVeil.style.transition = "none";
-      transitionBar.style.opacity = "0.98";
-      transitionBar.style.background =
-        "linear-gradient(90deg, rgba(210,168,92,0.52), rgba(5,6,9,0.98) 9%, rgba(5,6,9,0.98) 91%, rgba(210,168,92,0.52))";
-      transitionBar.style.transform = "translateX(-50%)";
       transitionBar.style.width = "1px";
+      transitionBar.style.opacity = "0.74";
+      transitionBar.style.boxShadow = "0 0 42px rgba(210,168,92,0.42)";
       transitionVeil.style.opacity = "0";
-      void transitionBar.offsetWidth;
-      transitionBar.style.transition = "width 440ms cubic-bezier(0.76, 0, 0.24, 1), opacity 220ms ease";
-      transitionVeil.style.transition = "opacity 440ms cubic-bezier(0.76, 0, 0.24, 1)";
-      transitionBar.style.width = "145vw";
-      transitionVeil.style.opacity = "0.72";
+      void transitionVeil.offsetWidth;
+      transitionBar.style.transition = "opacity 520ms ease, box-shadow 520ms ease";
+      transitionVeil.style.transition = "opacity 360ms cubic-bezier(0.22, 1, 0.36, 1)";
+      transitionBar.style.opacity = "0.96";
+      transitionBar.style.boxShadow = "0 0 58px rgba(210,168,92,0.5)";
+      transitionVeil.style.opacity = "0.2";
 
       wipeCoverTimer = window.setTimeout(() => {
         if (disposed) return;
-        onCovered?.();
-      }, 470);
-
-      wipeCollapseTimer = window.setTimeout(() => {
-        if (disposed) return;
-        transitionBar.style.transition = "width 520ms cubic-bezier(0.22, 1, 0.36, 1), opacity 260ms ease";
-        transitionVeil.style.transition = "opacity 520ms cubic-bezier(0.22, 1, 0.36, 1)";
-        transitionBar.style.width = "1px";
-        transitionVeil.style.opacity = "0.12";
-      }, 600);
-
-      wipeResetTimer = window.setTimeout(() => {
-        if (disposed) return;
-        transitionBar.classList.remove("saptambhu-wipe-active");
-        transitionVeil.classList.remove("saptambhu-veil-active");
-        transitionBar.style.animation = "none";
-        transitionVeil.style.animation = "none";
-        transitionBar.style.transition = "none";
-        transitionVeil.style.transition = "none";
-        transitionBar.style.opacity = "0.38";
-        transitionBar.style.background = "rgba(210,168,92,0.78)";
-        transitionBar.style.width = "1px";
-        transitionBar.style.transform = "translateX(-50%)";
-        transitionVeil.style.opacity = "0";
-      }, 1320);
+        Promise.resolve(onCovered?.()).finally(() => {
+          if (disposed) return;
+          transitionVeil.style.transition = "opacity 740ms cubic-bezier(0.22, 1, 0.36, 1)";
+          transitionBar.style.transition = "opacity 740ms ease, box-shadow 740ms ease";
+          transitionVeil.style.opacity = "0";
+          transitionBar.style.opacity = "0.38";
+          transitionBar.style.boxShadow = "0 0 42px rgba(210,168,92,0.42)";
+          wipeResetTimer = window.setTimeout(() => {
+            if (disposed) return;
+            transitionVeil.style.transition = "none";
+            transitionBar.style.transition = "none";
+          }, 780);
+        });
+      }, 120);
     };
 
     const goToStep = (nextStepIndex: number) => {
@@ -748,7 +740,6 @@ export function VideoSequenceHome() {
       setTargetPose(nextStep);
       window.clearTimeout(transitionTimer);
       window.clearTimeout(wipeCoverTimer);
-      window.clearTimeout(wipeCollapseTimer);
       window.clearTimeout(wipeResetTimer);
 
       const textNodes = getTextNodes();
@@ -772,12 +763,25 @@ export function VideoSequenceHome() {
           gsap.set(nextPanel, { opacity: 0, zIndex: 1 });
         }
 
-        animateSeparator(() => {
+        animateSeparator(async () => {
+          await prepareVideo(nextStep.videoIndex);
           if (nextPanel) {
-            gsap.set(nextPanel, { opacity: 1, zIndex: 2 });
+            gsap.to(nextPanel, {
+              duration: prefersReducedMotion ? 0 : 0.95,
+              ease: "power2.inOut",
+              opacity: 1,
+              overwrite: true,
+              zIndex: 2,
+            });
           }
           if (previousPanel) {
-            gsap.set(previousPanel, { opacity: 0, zIndex: 0 });
+            gsap.to(previousPanel, {
+              duration: prefersReducedMotion ? 0 : 0.95,
+              ease: "power2.inOut",
+              opacity: 0,
+              overwrite: true,
+              zIndex: 0,
+            });
           }
           showStepText(clampedIndex, false);
         });
@@ -846,34 +850,42 @@ export function VideoSequenceHome() {
       setTargetPose(stepTimeline[activeStep]);
     };
 
-    const loadVideos = Promise.all(
-      videoNodes.map(
-        (video, index) =>
-          new Promise<void>((resolve) => {
-            let resolved = false;
-            const ready = () => {
-              if (resolved) return;
-              resolved = true;
-              video.pause();
-              video.muted = true;
-              video.playsInline = true;
-              const firstStepForVideo = stepTimeline.find((step) => step.videoIndex === index);
-              setVideoTime(video, firstStepForVideo?.anchor ?? 0, true);
-              resolve();
-            };
+    const prepareVideo = (index: number, progressValue?: number) => {
+      const video = videoNodes[index];
+      if (!video) return Promise.resolve();
+      if (readyVideoIndexes.has(index)) return Promise.resolve();
+      const existing = videoReadyPromises.get(index);
+      if (existing) return existing;
 
-            if (video.readyState >= 2 && video.duration) {
-              ready();
-              return;
-            }
+      const promise = new Promise<void>((resolve) => {
+        let resolved = false;
+        const ready = () => {
+          if (resolved) return;
+          resolved = true;
+          readyVideoIndexes.add(index);
+          video.pause();
+          video.muted = true;
+          video.playsInline = true;
+          const firstStepForVideo = stepTimeline.find((step) => step.videoIndex === index);
+          setVideoTime(video, firstStepForVideo?.anchor ?? 0, true);
+          if (progressValue) setLoadProgress(progressValue);
+          resolve();
+        };
 
-            video.addEventListener("loadeddata", ready, { once: true });
-            video.addEventListener("canplay", ready, { once: true });
-            video.load();
-            window.setTimeout(ready, 4500);
-          }),
-      ),
-    );
+        if (video.readyState >= 2 && video.duration) {
+          ready();
+          return;
+        }
+
+        video.addEventListener("loadeddata", ready, { once: true });
+        video.addEventListener("canplay", ready, { once: true });
+        video.load();
+        window.setTimeout(ready, index === 0 ? 3200 : 5200);
+      });
+
+      videoReadyPromises.set(index, promise);
+      return promise;
+    };
 
     const initBottleLayer = async () => {
       renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, canvas });
@@ -946,8 +958,10 @@ export function VideoSequenceHome() {
       flowMaterial.userData.baseOpacity = 0.16;
       essenceMaterials.push(flowMaterial);
 
-      try {
-        const gltf = await new GLTFLoader().loadAsync(BOTTLE_MODEL_SRC);
+      setLoadProgress(58);
+
+      void new GLTFLoader().loadAsync(BOTTLE_MODEL_SRC).then((gltf) => {
+        if (disposed) return;
         bottleGroup = new THREE.Group();
         const model = gltf.scene;
         const box = new THREE.Box3().setFromObject(model);
@@ -972,9 +986,12 @@ export function VideoSequenceHome() {
         bottleGroup.add(model);
         bottleGroup.visible = true;
         scene.add(bottleGroup);
-      } catch (error) {
+        commitBottlePose(stepTimeline[activeStep]);
+        setLoadProgress(82);
+      }).catch((error) => {
         console.warn("Saptambu bottle failed to load; continuing with video journey.", error);
-      }
+        setLoadProgress(82);
+      });
     };
 
     const renderBottleLayer = () => {
@@ -1034,9 +1051,18 @@ export function VideoSequenceHome() {
 
     updateRootDataset(0);
     setStaticStep(0, true);
-    void Promise.all([loadVideos, initBottleLayer()])
-      .catch((error) => console.warn("Saptambu homepage asset load failed", error))
-      .finally(finishLoading);
+    setLoadProgress(10);
+    void Promise.all([prepareVideo(0, 44), initBottleLayer().then(() => setLoadProgress(68))])
+      .then(() => {
+        setLoadProgress(100);
+        finishLoading();
+        void Promise.all(videoNodes.slice(1).map((_, index) => prepareVideo(index + 1, 86 + index * 4)));
+      })
+      .catch((error) => {
+        console.warn("Saptambu homepage asset load failed", error);
+        setLoadProgress(100);
+        finishLoading();
+      });
 
     window.addEventListener("resize", onResize);
     window.addEventListener("mousemove", moveCursor);
@@ -1059,7 +1085,6 @@ export function VideoSequenceHome() {
       window.cancelAnimationFrame(renderFrame);
       window.clearTimeout(transitionTimer);
       window.clearTimeout(wipeCoverTimer);
-      window.clearTimeout(wipeCollapseTimer);
       window.clearTimeout(wipeResetTimer);
       window.removeEventListener("mousemove", moveCursor);
       window.removeEventListener("resize", onResize);
@@ -1111,6 +1136,13 @@ export function VideoSequenceHome() {
         <div className="pointer-events-none absolute inset-0 z-10 opacity-[0.022] mix-blend-overlay [background-image:url('data:image/svg+xml,%3Csvg_xmlns=%22http://www.w3.org/2000/svg%22_width=%22300%22_height=%22300%22%3E%3Cfilter_id=%22n%22%3E%3CfeTurbulence_type=%22fractalNoise%22_baseFrequency=%220.85%22_numOctaves=%224%22_stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect_width=%22300%22_height=%22300%22_filter=%22url(%23n)%22/%3E%3C/svg%3E')] [background-size:200px_200px]" />
 
         <canvas ref={bottleCanvasRef} className="pointer-events-none fixed inset-0 z-20 h-full w-full opacity-0" />
+
+        <Link
+          href="/collections/all"
+          className="focus-ring absolute right-6 top-[calc(5vh+1rem)] z-[58] rounded-full border border-[#d2a85c]/45 bg-black/32 px-4 py-2 font-mono text-[0.62rem] uppercase tracking-[0.22em] text-[#f4ead7]/86 backdrop-blur-md transition hover:border-[#d2a85c] hover:bg-[#d2a85c] hover:text-black md:right-8"
+        >
+          Skip to Products
+        </Link>
 
         {stepTimeline.map((chapter, index) => (
           <div
@@ -1168,7 +1200,7 @@ export function VideoSequenceHome() {
         />
         <div
           ref={transitionBarRef}
-          className="pointer-events-none absolute left-1/2 top-0 z-50 h-full w-px origin-center -translate-x-1/2 scale-x-100 bg-[#d2a85c]/78 opacity-40 shadow-[0_0_42px_rgba(210,168,92,0.42)]"
+          className="pointer-events-none absolute left-1/2 top-0 z-[51] h-full w-px origin-center -translate-x-1/2 scale-x-100 bg-[#d2a85c]/78 opacity-40 shadow-[0_0_42px_rgba(210,168,92,0.42)]"
         />
 
         <div className="pointer-events-none absolute inset-x-0 top-0 z-[55] h-[5vh] bg-[#050609]" />
@@ -1206,6 +1238,12 @@ export function VideoSequenceHome() {
                   style={{ animationDelay: `${mark * 0.09}s` }}
                 />
               ))}
+            </div>
+            <div className="h-px w-[min(320px,58vw)] overflow-hidden bg-[#d2a85c]/18">
+              <div
+                className="h-full origin-left bg-[linear-gradient(90deg,#d2a85c,#f0d79c)] transition-transform duration-300 ease-out"
+                style={{ transform: `scaleX(${loaderProgress / 100})` }}
+              />
             </div>
           </div>
         </div>

@@ -49,6 +49,15 @@ export const PaymentStatus = {
 export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus]
 
 
+export const MediaStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED'
+} as const
+
+export type MediaStatus = (typeof MediaStatus)[keyof typeof MediaStatus]
+
+
 export const DeliveryStatus = {
   ORDER_PLACED: 'ORDER_PLACED',
   PACKING: 'PACKING',

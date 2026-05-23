@@ -57,6 +57,47 @@ select {
   line-height: 1.75;
 }
 
+.prose-lite h2,
+.prose-lite h3,
+.prose-lite h4 {
+  margin-block: 1.35rem 0.65rem;
+  font-weight: 650;
+  line-height: 1.15;
+}
+
+.prose-lite h2 {
+  font-size: 1.65rem;
+}
+
+.prose-lite h3 {
+  font-size: 1.28rem;
+}
+
+.prose-lite ul,
+.prose-lite ol {
+  margin-block: 0.85rem;
+  padding-left: 1.35rem;
+}
+
+.prose-lite li {
+  margin-block: 0.35rem;
+  line-height: 1.7;
+}
+
+.prose-lite blockquote {
+  margin-block: 1.2rem;
+  border-left: 3px solid var(--gold);
+  padding-left: 1rem;
+  color: #6d5f52;
+  font-style: italic;
+}
+
+.prose-lite img {
+  margin-block: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+}
+
 @keyframes saptambu-loader {
   0% {
     transform: translateX(-100%);

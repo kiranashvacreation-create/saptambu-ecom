@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import sanitizeHtml from "sanitize-html";
 import { clearAdminSession, requireAdmin, setAdminSession, verifyAdmin } from "@/lib/auth";
 import { requireDb } from "@/lib/db";
 import { sendDeliveryEmail } from "@/lib/email";
@@ -19,6 +20,35 @@ function numberValue(formData: FormData, key: string, fallback = 0) {
 
 function optionalDate(value: string) {
   return value ? new Date(value) : null;
+}
+
+function richHtml(formData: FormData, key: string) {
+  return sanitizeHtml(text(formData, key), {
+    allowedAttributes: {
+      a: ["href", "name", "rel", "target"],
+      img: ["alt", "src", "title"],
+    },
+    allowedSchemes: ["http", "https", "mailto", "tel"],
+    allowedTags: [
+      "a",
+      "blockquote",
+      "br",
+      "em",
+      "h2",
+      "h3",
+      "h4",
+      "hr",
+      "img",
+      "li",
+      "ol",
+      "p",
+      "strong",
+      "ul",
+    ],
+    transformTags: {
+      a: sanitizeHtml.simpleTransform("a", { rel: "noopener noreferrer", target: "_blank" }),
+    },
+  });
 }
 
 export async function loginAction(formData: FormData) {
@@ -228,4 +258,51 @@ export async function saveSettingAction(formData: FormData) {
 
   revalidatePath("/");
   redirect("/admin/settings");
+}
+
+export async function saveMediaArticleAction(formData: FormData) {
+  await requireAdmin();
+  const db = requireDb();
+  const id = text(formData, "id");
+  const title = text(formData, "title");
+  const slug = text(formData, "slug") || slugify(title);
+  const publishedAt = text(formData, "publishedAt");
+  const status = text(formData, "status") as "DRAFT" | "PUBLISHED" | "ARCHIVED";
+
+  const data = {
+    title,
+    slug,
+    excerpt: text(formData, "excerpt"),
+    bodyHtml: richHtml(formData, "bodyHtml"),
+    coverImageUrl: text(formData, "coverImageUrl") || null,
+    coverImageAlt: text(formData, "coverImageAlt") || title,
+    sourceName: text(formData, "sourceName") || null,
+    sourceUrl: text(formData, "sourceUrl") || null,
+    publishedAt: publishedAt ? new Date(publishedAt) : status === "PUBLISHED" ? new Date() : null,
+    sortOrder: numberValue(formData, "sortOrder"),
+    status,
+  };
+
+  if (id) await db.mediaArticle.update({ where: { id }, data });
+  else await db.mediaArticle.create({ data });
+
+  revalidatePath("/admin/media");
+  revalidatePath("/pages/media-coverage-1");
+  revalidatePath(`/media/${slug}`);
+  redirect("/admin/media");
+}
+
+export async function archiveMediaArticleAction(formData: FormData) {
+  await requireAdmin();
+  const db = requireDb();
+  const id = text(formData, "id");
+
+  await db.mediaArticle.update({
+    where: { id },
+    data: { status: "ARCHIVED" },
+  });
+
+  revalidatePath("/admin/media");
+  revalidatePath("/pages/media-coverage-1");
+  redirect("/admin/media");
 }

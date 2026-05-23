@@ -15,11 +15,12 @@ export async function POST(request: Request) {
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "No image file uploaded." }, { status: 400 });
     }
+    const folder = formData.get("folder") === "media" ? "saptambu/media" : "saptambu/products";
 
     const bytes = Buffer.from(await file.arrayBuffer());
     const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder: "saptambu/products", resource_type: "image" },
+        { folder, resource_type: "image" },
         (error, uploadResult) => {
           if (error || !uploadResult) reject(error || new Error("Upload failed."));
           else resolve(uploadResult as { secure_url: string });

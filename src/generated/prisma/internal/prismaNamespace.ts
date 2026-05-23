@@ -395,7 +395,8 @@ export const ModelName = {
   StockAdjustment: 'StockAdjustment',
   AdminUser: 'AdminUser',
   SiteSetting: 'SiteSetting',
-  PageContent: 'PageContent'
+  PageContent: 'PageContent',
+  MediaArticle: 'MediaArticle'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -411,7 +412,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "product" | "productImage" | "category" | "productCategory" | "discountCode" | "order" | "orderItem" | "deliveryUpdate" | "stockAdjustment" | "adminUser" | "siteSetting" | "pageContent"
+    modelProps: "product" | "productImage" | "category" | "productCategory" | "discountCode" | "order" | "orderItem" | "deliveryUpdate" | "stockAdjustment" | "adminUser" | "siteSetting" | "pageContent" | "mediaArticle"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1303,6 +1304,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    MediaArticle: {
+      payload: Prisma.$MediaArticlePayload<ExtArgs>
+      fields: Prisma.MediaArticleFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.MediaArticleFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MediaArticlePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.MediaArticleFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MediaArticlePayload>
+        }
+        findFirst: {
+          args: Prisma.MediaArticleFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MediaArticlePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.MediaArticleFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MediaArticlePayload>
+        }
+        findMany: {
+          args: Prisma.MediaArticleFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MediaArticlePayload>[]
+        }
+        create: {
+          args: Prisma.MediaArticleCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MediaArticlePayload>
+        }
+        createMany: {
+          args: Prisma.MediaArticleCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.MediaArticleCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MediaArticlePayload>[]
+        }
+        delete: {
+          args: Prisma.MediaArticleDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MediaArticlePayload>
+        }
+        update: {
+          args: Prisma.MediaArticleUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MediaArticlePayload>
+        }
+        deleteMany: {
+          args: Prisma.MediaArticleDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.MediaArticleUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.MediaArticleUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MediaArticlePayload>[]
+        }
+        upsert: {
+          args: Prisma.MediaArticleUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MediaArticlePayload>
+        }
+        aggregate: {
+          args: Prisma.MediaArticleAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateMediaArticle>
+        }
+        groupBy: {
+          args: Prisma.MediaArticleGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MediaArticleGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.MediaArticleCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MediaArticleCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1518,6 +1593,26 @@ export const PageContentScalarFieldEnum = {
 export type PageContentScalarFieldEnum = (typeof PageContentScalarFieldEnum)[keyof typeof PageContentScalarFieldEnum]
 
 
+export const MediaArticleScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  slug: 'slug',
+  excerpt: 'excerpt',
+  bodyHtml: 'bodyHtml',
+  coverImageUrl: 'coverImageUrl',
+  coverImageAlt: 'coverImageAlt',
+  sourceName: 'sourceName',
+  sourceUrl: 'sourceUrl',
+  publishedAt: 'publishedAt',
+  sortOrder: 'sortOrder',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type MediaArticleScalarFieldEnum = (typeof MediaArticleScalarFieldEnum)[keyof typeof MediaArticleScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1682,6 +1777,20 @@ export type ListEnumDeliveryStatusFieldRefInput<$PrismaModel> = FieldRefInputTyp
 
 
 /**
+ * Reference to a field of type 'MediaStatus'
+ */
+export type EnumMediaStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MediaStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'MediaStatus[]'
+ */
+export type ListEnumMediaStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MediaStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -1816,6 +1925,7 @@ export type GlobalOmitConfig = {
   adminUser?: Prisma.AdminUserOmit
   siteSetting?: Prisma.SiteSettingOmit
   pageContent?: Prisma.PageContentOmit
+  mediaArticle?: Prisma.MediaArticleOmit
 }
 
 /* Types for Logging */

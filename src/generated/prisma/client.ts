@@ -101,3 +101,8 @@ export type SiteSetting = Prisma.SiteSettingModel
  * 
  */
 export type PageContent = Prisma.PageContentModel
+/**
+ * Model MediaArticle
+ * 
+ */
+export type MediaArticle = Prisma.MediaArticleModel

@@ -62,7 +62,8 @@ export const ModelName = {
   StockAdjustment: 'StockAdjustment',
   AdminUser: 'AdminUser',
   SiteSetting: 'SiteSetting',
-  PageContent: 'PageContent'
+  PageContent: 'PageContent',
+  MediaArticle: 'MediaArticle'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -255,6 +256,26 @@ export const PageContentScalarFieldEnum = {
 } as const
 
 export type PageContentScalarFieldEnum = (typeof PageContentScalarFieldEnum)[keyof typeof PageContentScalarFieldEnum]
+
+
+export const MediaArticleScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  slug: 'slug',
+  excerpt: 'excerpt',
+  bodyHtml: 'bodyHtml',
+  coverImageUrl: 'coverImageUrl',
+  coverImageAlt: 'coverImageAlt',
+  sourceName: 'sourceName',
+  sourceUrl: 'sourceUrl',
+  publishedAt: 'publishedAt',
+  sortOrder: 'sortOrder',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type MediaArticleScalarFieldEnum = (typeof MediaArticleScalarFieldEnum)[keyof typeof MediaArticleScalarFieldEnum]
 
 
 export const SortOrder = {
