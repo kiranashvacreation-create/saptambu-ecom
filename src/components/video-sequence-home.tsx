@@ -429,12 +429,6 @@ export function VideoSequenceHome() {
     const canvas = bottleCanvasRef.current ?? root?.querySelector<HTMLCanvasElement>("[data-bottle-canvas]");
     if (!root || !track || !transitionBar || !transitionVeil || !progressBar || !canvas) return;
 
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-    window.scrollTo(0, 0);
-
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const videoNodes = videoRefs.current.filter((video): video is HTMLVideoElement => Boolean(video));
     const cursorDot = cursorDotRef.current;
@@ -543,6 +537,13 @@ export function VideoSequenceHome() {
         scaleX: progressForStep(stepIndex),
       });
     };
+
+    const getNativeScrollProgress = () => {
+      const scrollableDistance = Math.max(root.offsetHeight - window.innerHeight, 1);
+      return clamp(-root.getBoundingClientRect().top / scrollableDistance, 0, 1);
+    };
+
+    const getNativeScrollStep = () => Math.round(getNativeScrollProgress() * (stepTimeline.length - 1));
 
     const applyMood = (step: StepBeat) => {
       root.style.setProperty("--video-brightness", step.grade.brightness);
@@ -818,41 +819,24 @@ export function VideoSequenceHome() {
         commitBottlePose(nextStep);
         showStepText(clampedIndex, false);
         isTransitioning = false;
+        const scrollStep = getNativeScrollStep();
+        if (scrollStep !== activeStep) {
+          window.setTimeout(() => goToStep(scrollStep), 0);
+        }
       }, duration * 1000 + 140);
     };
 
-    const advance = (direction: 1 | -1) => {
-      goToStep(activeStep + direction);
-    };
-
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      if (Math.abs(event.deltaY) < 12) return;
-      advance(event.deltaY > 0 ? 1 : -1);
-    };
-
-    let touchStartY = 0;
-    const onTouchStart = (event: TouchEvent) => {
-      touchStartY = event.touches[0]?.clientY ?? 0;
-    };
-
-    const onTouchEnd = (event: TouchEvent) => {
-      const endY = event.changedTouches[0]?.clientY ?? touchStartY;
-      const delta = touchStartY - endY;
-      if (Math.abs(delta) < 34) return;
-      advance(delta > 0 ? 1 : -1);
-    };
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      const forwardKeys = ["ArrowDown", "PageDown", " "];
-      const backwardKeys = ["ArrowUp", "PageUp"];
-      if (forwardKeys.includes(event.key)) {
-        event.preventDefault();
-        advance(1);
-      } else if (backwardKeys.includes(event.key)) {
-        event.preventDefault();
-        advance(-1);
-      }
+    const onScroll = () => {
+      if (!assetsReady || disposed) return;
+      const progress = getNativeScrollProgress();
+      const nextStep = Math.round(progress * (stepTimeline.length - 1));
+      gsap.to(progressBar, {
+        duration: prefersReducedMotion ? 0 : 0.18,
+        ease: "power2.out",
+        overwrite: true,
+        scaleX: progress,
+      });
+      if (nextStep !== activeStep) goToStep(nextStep);
     };
 
     const onResize = () => {
@@ -1092,7 +1076,7 @@ export function VideoSequenceHome() {
       if (disposed) return;
       window.setTimeout(() => {
         assetsReady = true;
-        setStaticStep(0, true);
+        setStaticStep(getNativeScrollStep(), true);
         setIsLoading(false);
       }, 220);
     };
@@ -1119,18 +1103,13 @@ export function VideoSequenceHome() {
 
     window.addEventListener("resize", onResize);
     window.addEventListener("mousemove", moveCursor);
-    window.addEventListener("wheel", onWheel, { passive: false });
-    window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchend", onTouchEnd, { passive: true });
-    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("scroll", onScroll, { passive: true });
 
     cursorFrame = window.requestAnimationFrame(tickCursor);
     renderFrame = window.requestAnimationFrame(renderBottleLayer);
 
     return () => {
       disposed = true;
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
       renderer?.dispose();
       gsap.killTweensOf([progressBar, track, transitionBar, transitionVeil, canvas, ...getTextNodes()]);
       videoTweens.forEach((tween) => tween.kill());
@@ -1141,10 +1120,7 @@ export function VideoSequenceHome() {
       window.clearTimeout(wipeResetTimer);
       window.removeEventListener("mousemove", moveCursor);
       window.removeEventListener("resize", onResize);
-      window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchend", onTouchEnd);
-      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("scroll", onScroll);
       videoNodes.forEach((video) => video.pause());
     };
   }, []);
@@ -1152,11 +1128,11 @@ export function VideoSequenceHome() {
   return (
     <section
       ref={rootRef}
-      className="relative h-screen cursor-none overflow-hidden bg-[#050609] text-[#f4ead7]"
+      className="relative min-h-[1100vh] cursor-none bg-[#050609] text-[#f4ead7]"
       data-active-step="1"
       style={rootStyle}
     >
-      <div className="relative h-screen overflow-hidden bg-black">
+      <div className="sticky top-0 h-screen overflow-hidden bg-black">
         <div ref={trackRef} className="absolute inset-0 h-full w-full" data-video-track>
           {videos.map((video, index) => (
             <div
