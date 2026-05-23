@@ -1,6 +1,7 @@
 import { saveCategoryAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/admin-shell";
 import { Field, inputClass, textareaClass } from "@/components/admin-field";
+import { AutoSlugFormController } from "@/components/auto-slug-form-controller";
 import { requireAdmin } from "@/lib/auth";
 import { requireDb } from "@/lib/db";
 
@@ -27,6 +28,7 @@ export default async function CategoriesPage() {
           ))}
         </div>
         <form action={saveCategoryAction} className="grid h-fit gap-4 rounded-lg border border-[var(--border)] bg-white p-5">
+          <AutoSlugFormController />
           <h2 className="text-xl font-semibold">New category</h2>
           <Field label="Title">
             <input name="title" required className={inputClass} />

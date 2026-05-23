@@ -1,6 +1,7 @@
 import type { MediaArticle } from "@/generated/prisma/client";
 import { archiveMediaArticleAction, saveMediaArticleAction } from "@/app/admin/actions";
 import { Field, inputClass, textareaClass } from "@/components/admin-field";
+import { AutoSlugFormController } from "@/components/auto-slug-form-controller";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { RichTextEditor } from "@/components/rich-text-editor";
 
@@ -14,6 +15,7 @@ function dateTimeLocal(value?: Date | null) {
 export function MediaArticleForm({ article }: { article?: MediaArticle }) {
   return (
     <form action={saveMediaArticleAction} className="grid gap-6 lg:grid-cols-[1fr_340px]">
+      <AutoSlugFormController />
       <input type="hidden" name="id" value={article?.id || ""} />
       <div className="grid gap-5 rounded-lg border border-[var(--border)] bg-white p-5">
         <div className="grid gap-4 md:grid-cols-2">

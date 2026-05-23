@@ -1,6 +1,7 @@
 import type { Category, Product, ProductCategory, ProductImage, StockAdjustment } from "@/generated/prisma/client";
 import { adjustStockAction, saveProductAction } from "@/app/admin/actions";
 import { Field, inputClass, textareaClass } from "@/components/admin-field";
+import { AutoSlugFormController } from "@/components/auto-slug-form-controller";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { toNumber } from "@/lib/money";
 
@@ -23,6 +24,7 @@ export function ProductForm({
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
       <form action={saveProductAction} className="grid gap-5 rounded-lg border border-[var(--border)] bg-white p-5">
+        <AutoSlugFormController />
         <input type="hidden" name="id" value={product?.id || ""} />
         <Field label="Title">
           <input name="title" required defaultValue={product?.title || ""} className={inputClass} />
