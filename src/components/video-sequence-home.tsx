@@ -57,19 +57,19 @@ type BottlePose = {
 const videos = [
   {
     label: "Origin, Ganga, Yamuna",
-    src: "/videos/home-sequence/upscaled/saptambhu-scene-02.mp4",
+    src: "/videos/home-sequence/scene-02.mp4",
   },
   {
     label: "Saraswati, Narmada, Godavari",
-    src: "/videos/home-sequence/upscaled/saptambhu-scene-01.mp4",
+    src: "/videos/home-sequence/scene-01.mp4",
   },
   {
     label: "Krishna, Kaveri, Confluence",
-    src: "/videos/home-sequence/upscaled/saptambhu-scene-04.mp4",
+    src: "/videos/home-sequence/scene-04.mp4",
   },
   {
     label: "Journey, Essence",
-    src: "/videos/home-sequence/upscaled/saptambhu-scene-03.mp4",
+    src: "/videos/home-sequence/scene-03.mp4",
   },
 ];
 
@@ -430,6 +430,23 @@ export function VideoSequenceHome() {
     if (!root || !track || !transitionBar || !transitionVeil || !progressBar || !canvas) return;
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const nav = navigator as Navigator & {
+      connection?: { effectiveType?: string; saveData?: boolean };
+      deviceMemory?: number;
+    };
+    const effectiveType = nav.connection?.effectiveType ?? "";
+    const isLowEndDevice =
+      prefersReducedMotion ||
+      nav.connection?.saveData ||
+      effectiveType.includes("2g") ||
+      effectiveType.includes("3g") ||
+      (nav.deviceMemory ?? 8) <= 4 ||
+      navigator.hardwareConcurrency <= 4 ||
+      window.innerWidth < 768;
+    const pointerFine = window.matchMedia("(pointer: fine)").matches;
+    const enableCustomCursor = pointerFine && window.innerWidth >= 768;
+    const renderPixelRatio = () => Math.min(window.devicePixelRatio, isLowEndDevice ? 0.82 : 1.08);
+    const renderFrameInterval = 1000 / (isLowEndDevice ? 24 : 42);
     const videoNodes = videoRefs.current.filter((video): video is HTMLVideoElement => Boolean(video));
     const cursorDot = cursorDotRef.current;
     const cursorRing = cursorRingRef.current;
@@ -447,6 +464,7 @@ export function VideoSequenceHome() {
     let isTransitioning = false;
     let keyLight: THREE.DirectionalLight | null = null;
     let renderFrame = 0;
+    let lastRenderAt = 0;
     let renderer: THREE.WebGLRenderer | null = null;
     let rimLight: THREE.DirectionalLight | null = null;
     let transitionTimer = 0;
@@ -456,16 +474,14 @@ export function VideoSequenceHome() {
     const readyVideoIndexes = new Set<number>();
     const videoReadyPromises = new Map<number, Promise<void>>();
     const loadingParts = {
-      bottle: 0,
       setup: 0,
       video: 0,
     };
 
     const syncLoadProgress = () => {
       const nextProgress =
-        loadingParts.setup * 8 +
-        loadingParts.video * 42 +
-        loadingParts.bottle * 50;
+        loadingParts.setup * 16 +
+        loadingParts.video * 84;
       setLoaderProgress((current) => Math.max(current, clamp(nextProgress, 0, 100)));
     };
 
@@ -663,7 +679,7 @@ export function VideoSequenceHome() {
       videoNodes.forEach((video, index) => {
         if (index === step.videoIndex) {
           setVideoTime(video, step.anchor, true);
-        } else {
+        } else if (readyVideoIndexes.has(index)) {
           const firstStepForVideo = stepTimeline.find((item) => item.videoIndex === index);
           setVideoTime(video, firstStepForVideo?.anchor ?? 0, true);
         }
@@ -844,7 +860,7 @@ export function VideoSequenceHome() {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 768 ? 1 : 1.16));
+      renderer.setPixelRatio(renderPixelRatio());
       setTargetPose(stepTimeline[activeStep]);
     };
 
@@ -857,6 +873,7 @@ export function VideoSequenceHome() {
 
       const promise = new Promise<void>((resolve) => {
         let resolved = false;
+        video.preload = "auto";
         const updateProgress = () => {
           if (!onProgress || !video.duration || Number.isNaN(video.duration) || video.buffered.length === 0) return;
           const bufferedEnd = video.buffered.end(video.buffered.length - 1);
@@ -903,7 +920,7 @@ export function VideoSequenceHome() {
 
     const initBottleLayer = (onProgress?: (progress: number) => void) => {
       renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, canvas });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 768 ? 1 : 1.16));
+      renderer.setPixelRatio(renderPixelRatio());
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1028,6 +1045,12 @@ export function VideoSequenceHome() {
 
     const renderBottleLayer = () => {
       if (disposed) return;
+      const now = performance.now();
+      if (now - lastRenderAt < renderFrameInterval) {
+        renderFrame = window.requestAnimationFrame(renderBottleLayer);
+        return;
+      }
+      lastRenderAt = now;
       if (!renderer) {
         renderFrame = window.requestAnimationFrame(renderBottleLayer);
         return;
@@ -1084,28 +1107,27 @@ export function VideoSequenceHome() {
     updateRootDataset(0);
     setStaticStep(0, true);
     setLoadPart("setup", 1);
-    void Promise.all([
-      prepareVideo(0, (progress) => setLoadPart("video", progress)),
-      initBottleLayer((progress) => setLoadPart("bottle", progress)),
-    ])
+    const bottleLoad = initBottleLayer();
+    void prepareVideo(0, (progress) => setLoadPart("video", progress))
       .then(() => {
         setLoadPart("video", 1);
-        setLoadPart("bottle", 1);
         finishLoading();
-        void Promise.all(videoNodes.slice(1).map((_, index) => prepareVideo(index + 1)));
+        void bottleLoad;
       })
       .catch((error) => {
         console.warn("Saptambu homepage asset load failed", error);
         setLoadPart("video", 1);
-        setLoadPart("bottle", 1);
         finishLoading();
+        void bottleLoad;
       });
 
     window.addEventListener("resize", onResize);
-    window.addEventListener("mousemove", moveCursor);
+    if (enableCustomCursor) {
+      window.addEventListener("mousemove", moveCursor);
+      cursorFrame = window.requestAnimationFrame(tickCursor);
+    }
     window.addEventListener("scroll", onScroll, { passive: true });
 
-    cursorFrame = window.requestAnimationFrame(tickCursor);
     renderFrame = window.requestAnimationFrame(renderBottleLayer);
 
     return () => {
@@ -1118,7 +1140,7 @@ export function VideoSequenceHome() {
       window.clearTimeout(transitionTimer);
       window.clearTimeout(wipeCoverTimer);
       window.clearTimeout(wipeResetTimer);
-      window.removeEventListener("mousemove", moveCursor);
+      if (enableCustomCursor) window.removeEventListener("mousemove", moveCursor);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("scroll", onScroll);
       videoNodes.forEach((video) => video.pause());
@@ -1147,9 +1169,10 @@ export function VideoSequenceHome() {
                 }}
                 aria-label={`Saptambu sacred waters scene - ${video.label}`}
                 className="h-full w-full object-cover transition-[filter] duration-700 ease-out [filter:brightness(var(--video-brightness))_contrast(var(--video-contrast))_saturate(var(--video-saturation))_hue-rotate(var(--video-hue))]"
+                disablePictureInPicture
                 muted
                 playsInline
-                preload="auto"
+                preload={index === 0 ? "auto" : "none"}
                 src={video.src}
               />
             </div>
