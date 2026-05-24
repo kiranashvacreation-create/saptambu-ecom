@@ -48,54 +48,55 @@ function MediaLogo({ item, index }: { item: MediaCoverageItem; index: number }) 
 
 function MediaCard({ item, index }: { item: MediaCoverageItem; index: number }) {
   const cta = (
-    <span className="group/cta mt-7 inline-flex items-center gap-2 text-sm font-semibold text-[#1c6d62]">
+    <span className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-[#1c6d62]">
       Read Full Article
-      <span className="grid h-8 w-8 place-items-center rounded-full border border-[#1c6d62]/20 bg-[#1c6d62]/8 transition group-hover:translate-x-0.5 group-hover:bg-[#1c6d62] group-hover:text-white">
+      <span className="grid h-8 w-8 place-items-center rounded-full border border-[#1c6d62]/20 bg-[#1c6d62]/8 transition group-hover/card:translate-x-0.5 group-hover/card:bg-[#1c6d62] group-hover/card:text-white">
         <ArrowUpRight size={15} />
       </span>
     </span>
   );
 
+  const content = (
+    <div className="group/card relative flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-[#ead8b8] bg-white/76 p-3 shadow-[0_24px_70px_rgba(57,34,18,0.08)] backdrop-blur-xl transition hover:-translate-y-1.5 hover:border-[#d9bb83] hover:shadow-[0_30px_80px_rgba(57,34,18,0.13)]">
+      <div className="absolute inset-0 opacity-0 transition duration-500 group-hover/card:opacity-100">
+        <div className="absolute -right-24 top-10 h-52 w-52 rounded-full bg-[#c58a2b]/18 blur-3xl" />
+        <div className="absolute -bottom-20 left-12 h-44 w-44 rounded-full bg-[#1c6d62]/12 blur-3xl" />
+      </div>
+      <MediaLogo item={item} index={index} />
+      <div className="relative flex flex-1 flex-col p-4 sm:p-5">
+        <div className="flex flex-wrap items-center gap-3 text-[0.66rem] font-semibold uppercase tracking-[0.22em] text-[#9b2f22]">
+          <span>{String(index + 1).padStart(2, "0")}</span>
+          <span className="h-px w-8 bg-[#c58a2b]/60" />
+          <span>{item.sourceName}</span>
+        </div>
+        <h2 className="mt-4 text-balance text-2xl font-semibold leading-tight text-[#201712]">
+          {item.headline}
+        </h2>
+        <p className="mt-4 line-clamp-4 text-sm leading-7 text-[#66584a]">{item.excerpt}</p>
+        <div className="mt-auto">{cta}</div>
+      </div>
+    </div>
+  );
+
   return (
-    <motion.article
+    <motion.div
       variants={fadeUp}
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.8, ease, delay: index * 0.05 }}
-      whileHover={{ y: -7 }}
-      className="group relative overflow-hidden rounded-[1.75rem] border border-[#ead8b8] bg-white/72 p-3 shadow-[0_24px_70px_rgba(57,34,18,0.08)] backdrop-blur-xl"
+      className="h-full"
     >
-      <div className="absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
-        <div className="absolute -right-24 top-10 h-52 w-52 rounded-full bg-[#c58a2b]/18 blur-3xl" />
-        <div className="absolute -bottom-20 left-12 h-44 w-44 rounded-full bg-[#1c6d62]/12 blur-3xl" />
-      </div>
-      <div className="relative grid gap-5 lg:grid-cols-[0.92fr_1.08fr] lg:items-stretch">
-        <MediaLogo item={item} index={index} />
-        <div className="flex min-h-72 flex-col rounded-[1.25rem] border border-white/70 bg-white/70 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] sm:p-7">
-          <div>
-            <div className="flex flex-wrap items-center gap-3 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[#9b2f22]">
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <span className="h-px w-8 bg-[#c58a2b]/60" />
-              <span>{item.sourceName}</span>
-            </div>
-            <h2 className="mt-5 text-balance text-2xl font-semibold leading-tight text-[#201712] sm:text-3xl">
-              {item.headline}
-            </h2>
-            <p className="mt-4 text-sm leading-7 text-[#66584a] sm:text-[0.98rem]">{item.excerpt}</p>
-          </div>
-          {item.isExternal ? (
-            <a href={item.href} target="_blank" rel="noopener noreferrer" className="mt-auto">
-              {cta}
-            </a>
-          ) : (
-            <Link href={item.href} className="mt-auto">
-              {cta}
-            </Link>
-          )}
-        </div>
-      </div>
-    </motion.article>
+      {item.isExternal ? (
+        <a href={item.href} target="_blank" rel="noopener noreferrer" className="block h-full">
+          {content}
+        </a>
+      ) : (
+        <Link href={item.href} className="block h-full">
+          {content}
+        </Link>
+      )}
+    </motion.div>
   );
 }
 
@@ -196,7 +197,7 @@ export function MediaCoverageShowcase({ items }: { items: MediaCoverageItem[] })
           </motion.p>
         </motion.div>
 
-        <div className="grid gap-5">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {items.map((item, index) => (
             <MediaCard key={item.id} item={item} index={index} />
           ))}

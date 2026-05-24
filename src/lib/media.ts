@@ -13,6 +13,21 @@ export async function listPublishedMediaArticles() {
   });
 }
 
+export async function listRecentPublishedMediaArticles(options?: { excludeSlug?: string; limit?: number }) {
+  const db = getDb();
+  if (!db) return [];
+
+  return db.mediaArticle.findMany({
+    orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+    take: options?.limit ?? 4,
+    where: {
+      ...(options?.excludeSlug ? { NOT: { slug: options.excludeSlug } } : {}),
+      publishedAt: { lte: new Date() },
+      status: "PUBLISHED",
+    },
+  });
+}
+
 export async function getPublishedMediaArticle(slug: string) {
   const db = getDb();
   if (!db) return null;

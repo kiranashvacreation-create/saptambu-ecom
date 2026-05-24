@@ -110,6 +110,23 @@ export async function listProducts(options?: {
   return products.map(mapProduct);
 }
 
+export async function listRecentProducts(limit = 3) {
+  noStore();
+  const db = getDb();
+  if (!db) return [];
+
+  const products = await db.product
+    .findMany({
+      include: productInclude,
+      orderBy: [{ createdAt: "desc" }],
+      take: limit,
+      where: { status: "ACTIVE" },
+    })
+    .catch(() => []);
+
+  return products.map(mapProduct);
+}
+
 export async function getProduct(slug: string, includeInactive = false) {
   noStore();
   const db = getDb();
