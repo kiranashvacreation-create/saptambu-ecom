@@ -314,7 +314,7 @@ const SEEK_EPSILON_SECONDS = 1 / 30;
 const LABEL_FRONT_Y = 0;
 const MIN_SAME_VIDEO_TRANSITION_SECONDS = 1.7;
 const MAX_SAME_VIDEO_TRANSITION_SECONDS = 3.8;
-const CROSS_TRANSITION_SECONDS = 1.42;
+const CROSS_TRANSITION_SECONDS = 2.08;
 const BOTTLE_MODEL_SRC = "/models/saptambu-bottle.glb";
 
 const rootStyle = {
@@ -706,37 +706,35 @@ export function VideoSequenceHome() {
     const animateSeparator = (onCovered?: () => void | Promise<void>) => {
       window.clearTimeout(wipeCoverTimer);
       window.clearTimeout(wipeResetTimer);
-      transitionVeil.style.animation = "none";
-      transitionBar.style.animation = "none";
       transitionBar.style.transition = "none";
       transitionVeil.style.transition = "none";
       transitionBar.style.width = "1px";
-      transitionBar.style.opacity = "0.74";
-      transitionBar.style.boxShadow = "0 0 42px rgba(210,168,92,0.42)";
+      transitionBar.style.opacity = "0.2";
+      transitionBar.style.boxShadow = "0 0 28px rgba(210,168,92,0.28)";
       transitionVeil.style.opacity = "0";
       void transitionVeil.offsetWidth;
-      transitionBar.style.transition = "opacity 520ms ease, box-shadow 520ms ease";
-      transitionVeil.style.transition = "opacity 360ms cubic-bezier(0.22, 1, 0.36, 1)";
-      transitionBar.style.opacity = "0.96";
-      transitionBar.style.boxShadow = "0 0 58px rgba(210,168,92,0.5)";
-      transitionVeil.style.opacity = "0.2";
+      transitionBar.style.transition = "opacity 980ms ease, box-shadow 980ms ease";
+      transitionVeil.style.transition = "opacity 520ms cubic-bezier(0.22, 1, 0.36, 1)";
+      transitionBar.style.opacity = "0.48";
+      transitionBar.style.boxShadow = "0 0 40px rgba(210,168,92,0.36)";
+      transitionVeil.style.opacity = "0.24";
 
       wipeCoverTimer = window.setTimeout(() => {
         if (disposed) return;
         Promise.resolve(onCovered?.()).finally(() => {
           if (disposed) return;
-          transitionVeil.style.transition = "opacity 740ms cubic-bezier(0.22, 1, 0.36, 1)";
-          transitionBar.style.transition = "opacity 740ms ease, box-shadow 740ms ease";
+          transitionVeil.style.transition = "opacity 1200ms cubic-bezier(0.22, 1, 0.36, 1)";
+          transitionBar.style.transition = "opacity 1150ms ease, box-shadow 1150ms ease";
           transitionVeil.style.opacity = "0";
-          transitionBar.style.opacity = "0.38";
-          transitionBar.style.boxShadow = "0 0 42px rgba(210,168,92,0.42)";
+          transitionBar.style.opacity = "0.28";
+          transitionBar.style.boxShadow = "0 0 28px rgba(210,168,92,0.28)";
           wipeResetTimer = window.setTimeout(() => {
             if (disposed) return;
             transitionVeil.style.transition = "none";
             transitionBar.style.transition = "none";
-          }, 780);
+          }, 1220);
         });
-      }, 120);
+      }, 260);
     };
 
     const goToStep = (nextStepIndex: number) => {
@@ -776,7 +774,6 @@ export function VideoSequenceHome() {
         showStepText(clampedIndex, false);
         scrubVideoTo(currentVideo, nextStep.anchor, duration);
       } else {
-        if (incomingVideo) setVideoTime(incomingVideo, nextStep.anchor, true);
         const previousPanel = videoPanels[previousStep.videoIndex];
         const nextPanel = videoPanels[nextStep.videoIndex];
 
@@ -786,27 +783,29 @@ export function VideoSequenceHome() {
         }
         if (nextPanel) {
           gsap.killTweensOf(nextPanel);
-          gsap.set(nextPanel, { opacity: 0, zIndex: 1 });
+          gsap.set(nextPanel, { opacity: 0, zIndex: 3 });
         }
 
         animateSeparator(async () => {
           await prepareVideo(nextStep.videoIndex);
+          if (incomingVideo) setVideoTime(incomingVideo, nextStep.anchor, true);
           if (nextPanel) {
             gsap.to(nextPanel, {
-              duration: prefersReducedMotion ? 0 : 0.95,
-              ease: "power2.inOut",
+              duration: prefersReducedMotion ? 0 : 1.55,
+              ease: "sine.inOut",
               opacity: 1,
               overwrite: true,
-              zIndex: 2,
+              zIndex: 3,
             });
           }
           if (previousPanel) {
             gsap.to(previousPanel, {
-              duration: prefersReducedMotion ? 0 : 0.95,
-              ease: "power2.inOut",
+              delay: prefersReducedMotion ? 0 : 0.08,
+              duration: prefersReducedMotion ? 0 : 1.65,
+              ease: "sine.inOut",
               opacity: 0,
               overwrite: true,
-              zIndex: 0,
+              zIndex: 2,
             });
           }
           showStepText(clampedIndex, false);
