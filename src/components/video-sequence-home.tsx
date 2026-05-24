@@ -474,14 +474,16 @@ export function VideoSequenceHome() {
     const readyVideoIndexes = new Set<number>();
     const videoReadyPromises = new Map<number, Promise<void>>();
     const loadingParts = {
+      bottle: 0,
       setup: 0,
       video: 0,
     };
 
     const syncLoadProgress = () => {
       const nextProgress =
-        loadingParts.setup * 16 +
-        loadingParts.video * 84;
+        loadingParts.setup * 8 +
+        loadingParts.video * 42 +
+        loadingParts.bottle * 50;
       setLoaderProgress((current) => Math.max(current, clamp(nextProgress, 0, 100)));
     };
 
@@ -1107,18 +1109,20 @@ export function VideoSequenceHome() {
     updateRootDataset(0);
     setStaticStep(0, true);
     setLoadPart("setup", 1);
-    const bottleLoad = initBottleLayer();
-    void prepareVideo(0, (progress) => setLoadPart("video", progress))
+    void Promise.all([
+      prepareVideo(0, (progress) => setLoadPart("video", progress)),
+      initBottleLayer((progress) => setLoadPart("bottle", progress)),
+    ])
       .then(() => {
         setLoadPart("video", 1);
+        setLoadPart("bottle", 1);
         finishLoading();
-        void bottleLoad;
       })
       .catch((error) => {
         console.warn("Saptambu homepage asset load failed", error);
         setLoadPart("video", 1);
+        setLoadPart("bottle", 1);
         finishLoading();
-        void bottleLoad;
       });
 
     window.addEventListener("resize", onResize);
