@@ -1,6 +1,28 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async headers() {
+    return [
+      {
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+        source: "/videos/home-sequence/:path*",
+      },
+      {
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+        source: "/models/:path*",
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

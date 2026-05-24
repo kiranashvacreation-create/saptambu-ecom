@@ -556,13 +556,6 @@ export function VideoSequenceHome() {
       });
     };
 
-    const getNativeScrollProgress = () => {
-      const scrollableDistance = Math.max(root.offsetHeight - window.innerHeight, 1);
-      return clamp(-root.getBoundingClientRect().top / scrollableDistance, 0, 1);
-    };
-
-    const getNativeScrollStep = () => Math.round(getNativeScrollProgress() * (stepTimeline.length - 1));
-
     const applyMood = (step: StepBeat) => {
       root.style.setProperty("--video-brightness", step.grade.brightness);
       root.style.setProperty("--video-contrast", step.grade.contrast);
@@ -837,24 +830,44 @@ export function VideoSequenceHome() {
         commitBottlePose(nextStep);
         showStepText(clampedIndex, false);
         isTransitioning = false;
-        const scrollStep = getNativeScrollStep();
-        if (scrollStep !== activeStep) {
-          window.setTimeout(() => goToStep(scrollStep), 0);
-        }
       }, duration * 1000 + 140);
     };
 
-    const onScroll = () => {
+    const advance = (direction: 1 | -1) => {
+      goToStep(activeStep + direction);
+    };
+
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
       if (!assetsReady || disposed) return;
-      const progress = getNativeScrollProgress();
-      const nextStep = Math.round(progress * (stepTimeline.length - 1));
-      gsap.to(progressBar, {
-        duration: prefersReducedMotion ? 0 : 0.18,
-        ease: "power2.out",
-        overwrite: true,
-        scaleX: progress,
-      });
-      if (nextStep !== activeStep) goToStep(nextStep);
+      if (Math.abs(event.deltaY) < 12) return;
+      advance(event.deltaY > 0 ? 1 : -1);
+    };
+
+    let touchStartY = 0;
+    const onTouchStart = (event: TouchEvent) => {
+      touchStartY = event.touches[0]?.clientY ?? 0;
+    };
+
+    const onTouchEnd = (event: TouchEvent) => {
+      if (!assetsReady || disposed) return;
+      const endY = event.changedTouches[0]?.clientY ?? touchStartY;
+      const delta = touchStartY - endY;
+      if (Math.abs(delta) < 34) return;
+      advance(delta > 0 ? 1 : -1);
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!assetsReady || disposed) return;
+      const forwardKeys = ["ArrowDown", "PageDown", " "];
+      const backwardKeys = ["ArrowUp", "PageUp"];
+      if (forwardKeys.includes(event.key)) {
+        event.preventDefault();
+        advance(1);
+      } else if (backwardKeys.includes(event.key)) {
+        event.preventDefault();
+        advance(-1);
+      }
     };
 
     const onResize = () => {
@@ -1101,7 +1114,7 @@ export function VideoSequenceHome() {
       if (disposed) return;
       window.setTimeout(() => {
         assetsReady = true;
-        setStaticStep(getNativeScrollStep(), true);
+        setStaticStep(0, true);
         setIsLoading(false);
       }, 220);
     };
@@ -1130,7 +1143,10 @@ export function VideoSequenceHome() {
       window.addEventListener("mousemove", moveCursor);
       cursorFrame = window.requestAnimationFrame(tickCursor);
     }
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    window.addEventListener("keydown", onKeyDown);
 
     renderFrame = window.requestAnimationFrame(renderBottleLayer);
 
@@ -1146,7 +1162,10 @@ export function VideoSequenceHome() {
       window.clearTimeout(wipeResetTimer);
       if (enableCustomCursor) window.removeEventListener("mousemove", moveCursor);
       window.removeEventListener("resize", onResize);
-      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("keydown", onKeyDown);
       videoNodes.forEach((video) => video.pause());
     };
   }, []);
@@ -1154,11 +1173,11 @@ export function VideoSequenceHome() {
   return (
     <section
       ref={rootRef}
-      className="relative min-h-[1100vh] cursor-none bg-[#050609] text-[#f4ead7]"
+      className="relative h-[100svh] cursor-none overflow-hidden bg-[#050609] text-[#f4ead7]"
       data-active-step="1"
       style={rootStyle}
     >
-      <div className="sticky top-0 h-screen overflow-hidden bg-black">
+      <div className="relative h-[100svh] overflow-hidden bg-black">
         <div ref={trackRef} className="absolute inset-0 h-full w-full" data-video-track>
           {videos.map((video, index) => (
             <div

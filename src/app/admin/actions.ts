@@ -6,6 +6,7 @@ import sanitizeHtml from "sanitize-html";
 import { clearAdminSession, requireAdmin, setAdminSession, verifyAdmin } from "@/lib/auth";
 import { requireDb } from "@/lib/db";
 import { sendDeliveryEmail } from "@/lib/email";
+import { clearPublicCache } from "@/lib/redis-cache";
 import { slugify } from "@/lib/slugs";
 
 function text(formData: FormData, key: string) {
@@ -124,6 +125,7 @@ export async function saveProductAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/collections/all");
   revalidatePath(`/products/${product.slug}`);
+  await clearPublicCache(["catalog"]);
   redirect("/admin/products");
 }
 
@@ -147,6 +149,7 @@ export async function adjustStockAction(formData: FormData) {
   ]);
 
   revalidatePath("/admin/products");
+  await clearPublicCache(["catalog"]);
   redirect(`/admin/products/${productId}`);
 }
 
@@ -169,6 +172,7 @@ export async function deleteProductAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/products");
   revalidatePath("/collections/all");
+  await clearPublicCache(["catalog"]);
   redirect("/admin/products");
 }
 
@@ -189,6 +193,7 @@ export async function saveCategoryAction(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/collections/all");
+  await clearPublicCache(["catalog"]);
   redirect("/admin/categories");
 }
 
@@ -206,6 +211,7 @@ export async function deleteCategoryAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/admin/categories");
   revalidatePath("/collections/all");
+  await clearPublicCache(["catalog"]);
   redirect("/admin/categories");
 }
 
@@ -326,6 +332,7 @@ export async function saveSettingAction(formData: FormData) {
   );
 
   revalidatePath("/");
+  await clearPublicCache(["settings"]);
   redirect("/admin/settings");
 }
 
@@ -358,6 +365,7 @@ export async function saveMediaArticleAction(formData: FormData) {
   revalidatePath("/admin/media");
   revalidatePath("/pages/media-coverage-1");
   revalidatePath(`/media/${slug}`);
+  await clearPublicCache(["media"]);
   redirect("/admin/media");
 }
 
@@ -373,6 +381,7 @@ export async function archiveMediaArticleAction(formData: FormData) {
 
   revalidatePath("/admin/media");
   revalidatePath("/pages/media-coverage-1");
+  await clearPublicCache(["media"]);
   redirect("/admin/media");
 }
 
@@ -389,5 +398,6 @@ export async function deleteMediaArticleAction(formData: FormData) {
 
   revalidatePath("/admin/media");
   revalidatePath("/pages/media-coverage-1");
+  await clearPublicCache(["media"]);
   redirect("/admin/media");
 }
