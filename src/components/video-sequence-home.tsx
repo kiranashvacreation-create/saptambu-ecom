@@ -1221,9 +1221,12 @@ export function VideoSequenceHome() {
 
         <Link
           href="/collections/all"
-          className="essence-product-cta focus-ring pointer-events-none absolute left-1/2 top-[calc(50%+32vh)] z-[46] -translate-x-1/2 translate-y-3 rounded-full border border-[#d2a85c]/55 bg-[#050609]/52 px-5 py-3 font-mono text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-[#f4ead7]/90 opacity-0 shadow-[0_0_34px_rgba(210,168,92,0.14)] backdrop-blur-md transition duration-500 hover:border-[#f0d79c] hover:bg-[#d2a85c] hover:text-[#050609] sm:px-6 md:top-[calc(50%+34vh)]"
+          className="essence-product-cta focus-ring pointer-events-none absolute left-1/2 top-[calc(50%+32vh)] z-[46] -translate-x-1/2 translate-y-3 scale-95 overflow-hidden rounded-full border border-[#ffe8ae]/70 bg-[linear-gradient(135deg,#fff0bf_0%,#e2b65d_42%,#a96624_100%)] px-7 py-3.5 font-mono text-[0.64rem] font-bold uppercase tracking-[0.3em] text-[#180e06] opacity-0 shadow-[0_0_24px_rgba(210,168,92,0.32),0_16px_42px_rgba(0,0,0,0.36)] backdrop-blur-md transition duration-500 hover:border-[#fff7d3] hover:shadow-[0_0_42px_rgba(240,215,156,0.52),0_18px_56px_rgba(0,0,0,0.42)] sm:px-8 md:top-[calc(50%+34vh)]"
         >
-          Explore Products
+          <span className="relative z-10 flex items-center gap-3">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#fff8d2] shadow-[0_0_16px_rgba(255,248,210,0.95)]" />
+            Explore Products
+          </span>
         </Link>
 
         <div
@@ -1312,9 +1315,45 @@ export function VideoSequenceHome() {
         }
 
         :global(section[data-active-step="11"] .essence-product-cta) {
+          opacity: 1 !important;
+          pointer-events: auto !important;
+          transform: translate(-50%, 0) scale(1) !important;
+          animation: saptambu-cta-breathe 3.2s ease-in-out infinite;
+        }
+
+        :global(section[data-active-step="11"] .essence-product-cta:hover) {
+          transform: translate(-50%, -2px) scale(1.035) !important;
+        }
+
+        :global(.essence-product-cta::before) {
+          content: "";
+          position: absolute;
+          inset: 1px;
+          border-radius: inherit;
+          background:
+            linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, 0) 28%, rgba(255, 255, 255, 0.46) 44%, rgba(255, 255, 255, 0) 58%, transparent 100%),
+            radial-gradient(circle at 25% 18%, rgba(255, 255, 255, 0.42), transparent 30%);
+          opacity: 0.78;
+          transform: translateX(-115%);
+        }
+
+        :global(.essence-product-cta::after) {
+          content: "";
+          position: absolute;
+          inset: -9px;
+          z-index: -1;
+          border-radius: inherit;
+          background: radial-gradient(ellipse at center, rgba(240, 215, 156, 0.36), rgba(210, 168, 92, 0.1) 44%, transparent 70%);
+          opacity: 0;
+          transition: opacity 0.45s ease;
+        }
+
+        :global(section[data-active-step="11"] .essence-product-cta::before) {
+          animation: saptambu-cta-sheen 3.85s ease-in-out infinite;
+        }
+
+        :global(section[data-active-step="11"] .essence-product-cta::after) {
           opacity: 1;
-          pointer-events: auto;
-          transform: translate(-50%, 0);
         }
 
         @keyframes saptambhu-soft-wipe {
@@ -1334,6 +1373,31 @@ export function VideoSequenceHome() {
           100% {
             opacity: 0.38;
             width: 1px;
+          }
+        }
+
+        @keyframes saptambu-cta-sheen {
+          0%,
+          48% {
+            transform: translateX(-115%);
+          }
+          70%,
+          100% {
+            transform: translateX(115%);
+          }
+        }
+
+        @keyframes saptambu-cta-breathe {
+          0%,
+          100% {
+            box-shadow:
+              0 0 24px rgba(210, 168, 92, 0.32),
+              0 16px 42px rgba(0, 0, 0, 0.36);
+          }
+          50% {
+            box-shadow:
+              0 0 38px rgba(240, 215, 156, 0.48),
+              0 18px 54px rgba(0, 0, 0, 0.42);
           }
         }
 
