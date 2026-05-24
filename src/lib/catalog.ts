@@ -3,7 +3,6 @@ import "server-only";
 import { unstable_noStore as noStore } from "next/cache";
 import { getDb } from "@/lib/db";
 import { toNumber } from "@/lib/money";
-import { cachedJson } from "@/lib/redis-cache";
 
 export type ProductSummary = {
   id: string;
@@ -83,119 +82,109 @@ export async function listProducts(options?: {
   query?: string;
 }) {
   noStore();
-  return cachedJson(`catalog:products:${JSON.stringify(options ?? {})}`, async () => {
-    const db = getDb();
-    if (!db) return [];
+  const db = getDb();
+  if (!db) return [];
 
-    const products = await db.product
-      .findMany({
-        where: {
-          ...(options?.includeInactive ? {} : { status: "ACTIVE" }),
-          ...(options?.query
-            ? {
-                OR: [
-                  { title: { contains: options.query, mode: "insensitive" } },
-                  { description: { contains: options.query, mode: "insensitive" } },
-                  { tags: { has: options.query } },
-                ],
-              }
-            : {}),
-          ...(options?.categorySlug
-            ? { categories: { some: { category: { slug: options.categorySlug } } } }
-            : {}),
-        },
-        include: productInclude,
-        orderBy: [{ status: "asc" }, { title: "asc" }],
-      })
-      .catch(() => []);
+  const products = await db.product
+    .findMany({
+      where: {
+        ...(options?.includeInactive ? {} : { status: "ACTIVE" }),
+        ...(options?.query
+          ? {
+              OR: [
+                { title: { contains: options.query, mode: "insensitive" } },
+                { description: { contains: options.query, mode: "insensitive" } },
+                { tags: { has: options.query } },
+              ],
+            }
+          : {}),
+        ...(options?.categorySlug
+          ? { categories: { some: { category: { slug: options.categorySlug } } } }
+          : {}),
+      },
+      include: productInclude,
+      orderBy: [{ status: "asc" }, { title: "asc" }],
+    })
+    .catch(() => []);
 
-    return products.map(mapProduct);
-  });
+  return products.map(mapProduct);
 }
 
 export async function listRecentProducts(limit = 3) {
   noStore();
-  return cachedJson(`catalog:recent-products:${limit}`, async () => {
-    const db = getDb();
-    if (!db) return [];
+  const db = getDb();
+  if (!db) return [];
 
-    const products = await db.product
-      .findMany({
-        include: productInclude,
-        orderBy: [{ createdAt: "desc" }],
-        take: limit,
-        where: { status: "ACTIVE" },
-      })
-      .catch(() => []);
+  const products = await db.product
+    .findMany({
+      include: productInclude,
+      orderBy: [{ createdAt: "desc" }],
+      take: limit,
+      where: { status: "ACTIVE" },
+    })
+    .catch(() => []);
 
-    return products.map(mapProduct);
-  });
+  return products.map(mapProduct);
 }
 
 export async function getProduct(slug: string, includeInactive = false) {
   noStore();
-  return cachedJson(`catalog:product:${slug}:${includeInactive ? "all" : "active"}`, async () => {
-    const db = getDb();
-    if (!db) return null;
+  const db = getDb();
+  if (!db) return null;
 
-    const product = await db.product
-      .findUnique({
-        where: { slug },
-        include: productInclude,
-      })
-      .catch(() => null);
+  const product = await db.product
+    .findUnique({
+      where: { slug },
+      include: productInclude,
+    })
+    .catch(() => null);
 
-    if (!product || (!includeInactive && product.status !== "ACTIVE")) return null;
-    return mapProduct(product);
-  });
+  if (!product || (!includeInactive && product.status !== "ACTIVE")) return null;
+  return mapProduct(product);
 }
 
 export async function listCategories() {
   noStore();
-  return cachedJson("catalog:categories", async () => {
-    const db = getDb();
-    if (!db) return [];
+  const db = getDb();
+  if (!db) return [];
 
-    const categories = await db.category
-      .findMany({
-        include: { _count: { select: { products: true } } },
-        orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
-      })
-      .catch(() => []);
+  const categories = await db.category
+    .findMany({
+      include: { _count: { select: { products: true } } },
+      orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
+    })
+    .catch(() => []);
 
-    return categories.map((category) => ({
-      id: category.id,
-      title: category.title,
-      slug: category.slug,
-      description: category.description,
-      productCount: category._count.products,
-    }));
-  });
+  return categories.map((category) => ({
+    id: category.id,
+    title: category.title,
+    slug: category.slug,
+    description: category.description,
+    productCount: category._count.products,
+  }));
 }
 
 export async function getCategory(slug: string) {
   noStore();
-  return cachedJson(`catalog:category:${slug}`, async () => {
-    const db = getDb();
-    if (!db) return null;
+  const db = getDb();
+  if (!db) return null;
 
-    const category = await db.category
-      .findUnique({
-        where: { slug },
-        include: { _count: { select: { products: true } } },
-      })
-      .catch(() => null);
+  const category = await db.category
+    .findUnique({
+      where: { slug },
+      include: { _count: { select: { products: true } } },
+    })
+    .catch(() => null);
 
-    if (!category) return null;
+  if (!category) return null;
 
-    return {
-      id: category.id,
-      title: category.title,
-      slug: category.slug,
-      description: category.description,
-      productCount: category._count.products,
-    };
-  });
+  return {
+    id: category.id,
+    title: category.title,
+    slug: category.slug,
+    description: category.description,
+    productCount: category._count.products,
+  };
 }
 
 export function currentPrice(product: ProductSummary) {

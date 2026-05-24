@@ -53,5 +53,3 @@ The admin can manage products, stock, categories, coupon codes, orders, delivery
 ## Deployment Notes
 
 Railway should provide `DATABASE_URL` from the Postgres plugin. Replace the local `DATABASE_URL` in Railway env vars, then run `npm run railway:setup` once after setting env vars to create tables and import products. Product images uploaded after launch go to Cloudinary; Railway disk is not used for durable uploads.
-
-For faster public catalog/media reads, add a Railway Redis service and set the app service variable `REDIS_URL=${{Redis.REDIS_URL}}`. If the Redis service has a different Railway name, replace `Redis` in the reference. `CACHE_NAMESPACE` can be set per environment, for example `saptambu-prod`.

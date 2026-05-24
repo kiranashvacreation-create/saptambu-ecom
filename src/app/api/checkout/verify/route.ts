@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireDb } from "@/lib/db";
 import { sendOrderEmails } from "@/lib/email";
 import { verifyRazorpaySignature } from "@/lib/razorpay";
-import { clearPublicCache } from "@/lib/redis-cache";
 
 const schema = z.object({
   orderNumber: z.string(),
@@ -89,7 +88,6 @@ export async function POST(request: Request) {
       where: { id: order.id },
       include: { items: true },
     });
-    await clearPublicCache(["catalog"]);
     await sendOrderEmails(paidOrder);
 
     return NextResponse.json({ ok: true });
