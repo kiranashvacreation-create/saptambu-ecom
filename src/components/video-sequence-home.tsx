@@ -1167,8 +1167,16 @@ export function VideoSequenceHome() {
         <canvas ref={bottleCanvasRef} className="pointer-events-none fixed inset-0 z-20 h-full w-full opacity-0" data-bottle-canvas />
 
         <Link
+          aria-label="Skip to Products"
           href="/collections/all"
-          className="focus-ring absolute right-6 top-[calc(5vh+1rem)] z-[58] rounded-full border border-[#d2a85c]/45 bg-black/32 px-4 py-2 font-mono text-[0.62rem] uppercase tracking-[0.22em] text-[#f4ead7]/86 backdrop-blur-md transition hover:border-[#d2a85c] hover:bg-[#d2a85c] hover:text-black md:right-8"
+          onClick={(event) => {
+            if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+              return;
+            }
+            event.preventDefault();
+            window.location.assign("/collections/all");
+          }}
+          className="focus-ring pointer-events-auto absolute right-6 top-[calc(5vh+1rem)] z-[75] rounded-full border border-[#d2a85c]/45 bg-black/32 px-4 py-2 font-mono text-[0.62rem] uppercase tracking-[0.22em] text-[#f4ead7]/86 backdrop-blur-md transition hover:border-[#d2a85c] hover:bg-[#d2a85c] hover:text-black md:right-8"
         >
           Skip to Products
         </Link>
