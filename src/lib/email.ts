@@ -1,6 +1,9 @@
 import "server-only";
 
+import dns from "node:dns";
+import net from "node:net";
 import nodemailer from "nodemailer";
+import type SMTPTransport from "nodemailer/lib/smtp-transport";
 import {
   EmailEvent,
   EmailRecipientRole,
@@ -73,6 +76,45 @@ function normalizeEmailAddress(value: string | null | undefined) {
   return EMAIL_PATTERN.test(normalized) ? normalized : "";
 }
 
+function shouldForceSmtpIpv4() {
+  return cleanEnvValue(process.env.SMTP_FORCE_IPV4) !== "false";
+}
+
+function createIpv4SocketFactory(host: string, port: number, connectionTimeout: number): SMTPTransport.Options["getSocket"] {
+  return (_options, callback) => {
+    let settled = false;
+    const done = (error: Error | null, socketOptions?: { connection: net.Socket }) => {
+      if (settled) return;
+      settled = true;
+      callback(error, socketOptions);
+    };
+
+    dns.resolve4(host, (dnsError, addresses) => {
+      if (dnsError) {
+        done(dnsError);
+        return;
+      }
+
+      const address = addresses[0];
+      if (!address) {
+        done(new Error(`No IPv4 address found for SMTP host ${host}.`));
+        return;
+      }
+
+      const socket = net.connect({ host: address, port, family: 4, timeout: connectionTimeout }, () => {
+        socket.setTimeout(0);
+        done(null, { connection: socket });
+      });
+
+      socket.once("error", done);
+      socket.once("timeout", () => {
+        socket.destroy();
+        done(new Error(`SMTP IPv4 connection to ${host}:${port} timed out.`));
+      });
+    });
+  };
+}
+
 function getTransporter() {
   const host = cleanEnvValue(process.env.SMTP_HOST);
   const user = cleanEnvValue(process.env.SMTP_USER);
@@ -83,13 +125,18 @@ function getTransporter() {
   }
 
   if (!transporter) {
+    const port = Number(cleanEnvValue(process.env.SMTP_PORT) || 587);
+    const secure = cleanEnvValue(process.env.SMTP_SECURE) === "true";
+    const connectionTimeout = 8000;
+
     transporter = nodemailer.createTransport({
       host,
-      port: Number(cleanEnvValue(process.env.SMTP_PORT) || 587),
-      secure: cleanEnvValue(process.env.SMTP_SECURE) === "true",
-      connectionTimeout: 8000,
+      port,
+      secure,
+      connectionTimeout,
       greetingTimeout: 8000,
       socketTimeout: 12000,
+      getSocket: !secure && shouldForceSmtpIpv4() ? createIpv4SocketFactory(host, port, connectionTimeout) : undefined,
       auth: {
         user,
         pass,
