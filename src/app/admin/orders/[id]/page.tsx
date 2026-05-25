@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { deleteOrderAction, updateOrderDeliveryAction } from "@/app/admin/actions";
+import { deleteOrderAction, resendOrderEmailsAction, updateOrderDeliveryAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/admin-shell";
 import { Field, inputClass, textareaClass } from "@/components/admin-field";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
@@ -9,12 +9,31 @@ import { formatMoney, toNumber } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
+function formatDate(value: Date) {
+  return new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Kolkata",
+  }).format(value);
+}
+
+function statusClass(status: string) {
+  if (status === "SENT") return "bg-emerald-50 text-emerald-700 ring-emerald-200";
+  if (status === "FAILED") return "bg-red-50 text-red-700 ring-red-200";
+  if (status === "SKIPPED") return "bg-amber-50 text-amber-700 ring-amber-200";
+  return "bg-stone-100 text-stone-700 ring-stone-200";
+}
+
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
   const { id } = await params;
   const order = await requireDb().order.findUnique({
     where: { id },
-    include: { items: true, deliveryUpdates: { orderBy: { createdAt: "desc" } } },
+    include: {
+      items: true,
+      deliveryUpdates: { orderBy: { createdAt: "desc" } },
+      emailLogs: { orderBy: { createdAt: "desc" }, take: 12 },
+    },
   });
 
   if (!order) notFound();
@@ -86,9 +105,48 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               <textarea name="message" rows={4} defaultValue={order.deliveryMessage || ""} className={textareaClass} />
             </Field>
             <button className="focus-ring h-10 rounded-md bg-[#9b2f22] px-4 text-sm font-semibold text-white">
-              Save & email customer
+              Save & email customer + owner
             </button>
           </form>
+          <div className="rounded-lg border border-[var(--border)] bg-white p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold">Email logs</h2>
+                <p className="mt-1 text-xs text-[#6d5f52]">Customer and owner notifications for this order.</p>
+              </div>
+              <form action={resendOrderEmailsAction}>
+                <input type="hidden" name="orderId" value={order.id} />
+                <button className="focus-ring h-9 rounded-md border border-[var(--border)] px-3 text-xs font-semibold text-[#281b13]">
+                  Resend order emails
+                </button>
+              </form>
+            </div>
+            <div className="mt-4 grid gap-3 text-sm">
+              {order.emailLogs.length ? (
+                order.emailLogs.map((log) => (
+                  <div key={log.id} className="border-b border-[var(--border)] pb-3 last:border-0">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold">{log.event.replaceAll("_", " ")}</p>
+                        <p className="mt-1 break-all text-xs text-[#6d5f52]">
+                          {log.recipientRole} · {log.recipient}
+                        </p>
+                      </div>
+                      <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ring-1 ${statusClass(log.status)}`}>
+                        {log.status}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-[#8a7663]">
+                      {log.sentAt ? `Sent ${formatDate(log.sentAt)}` : `Logged ${formatDate(log.createdAt)}`}
+                    </p>
+                    {log.error ? <p className="mt-2 rounded-md bg-red-50 p-2 text-xs text-red-700">{log.error}</p> : null}
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-[#6d5f52]">No email attempts logged yet.</p>
+              )}
+            </div>
+          </div>
           <div className="rounded-lg border border-[var(--border)] bg-white p-5">
             <h2 className="text-xl font-semibold">History</h2>
             <div className="mt-4 grid gap-3 text-sm">

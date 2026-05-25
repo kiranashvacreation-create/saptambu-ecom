@@ -36,6 +36,8 @@ npm run local:db     # start local Postgres in Docker
 npm run local:setup  # start local Postgres, push schema, seed catalog
 npm run db:push      # push Prisma schema to Postgres
 npm run db:seed      # import current 55 Shopify products and create admin
+npm run migrate:cloudinary:dry-run
+npm run migrate:cloudinary -- --force
 npm run railway:setup
 ```
 
@@ -53,3 +55,5 @@ The admin can manage products, stock, categories, coupon codes, orders, delivery
 ## Deployment Notes
 
 Railway should provide `DATABASE_URL` from the Postgres plugin. Replace the local `DATABASE_URL` in Railway env vars, then run `npm run railway:setup` once after setting env vars to create tables and import products. Product images uploaded after launch go to Cloudinary; Railway disk is not used for durable uploads.
+
+Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`, then run `npm run migrate:cloudinary:dry-run` to preview product/media image uploads. Run `npm run migrate:cloudinary -- --force` to upload non-Cloudinary product images and media coverage images, update matching database URLs, and rewrite fallback media image URLs in code.

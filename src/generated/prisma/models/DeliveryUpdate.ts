@@ -191,6 +191,7 @@ export type DeliveryUpdateWhereInput = {
   emailed?: Prisma.BoolFilter<"DeliveryUpdate"> | boolean
   createdAt?: Prisma.DateTimeFilter<"DeliveryUpdate"> | Date | string
   order?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
+  emailLogs?: Prisma.EmailLogListRelationFilter
 }
 
 export type DeliveryUpdateOrderByWithRelationInput = {
@@ -201,6 +202,7 @@ export type DeliveryUpdateOrderByWithRelationInput = {
   emailed?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   order?: Prisma.OrderOrderByWithRelationInput
+  emailLogs?: Prisma.EmailLogOrderByRelationAggregateInput
 }
 
 export type DeliveryUpdateWhereUniqueInput = Prisma.AtLeast<{
@@ -214,6 +216,7 @@ export type DeliveryUpdateWhereUniqueInput = Prisma.AtLeast<{
   emailed?: Prisma.BoolFilter<"DeliveryUpdate"> | boolean
   createdAt?: Prisma.DateTimeFilter<"DeliveryUpdate"> | Date | string
   order?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
+  emailLogs?: Prisma.EmailLogListRelationFilter
 }, "id">
 
 export type DeliveryUpdateOrderByWithAggregationInput = {
@@ -247,6 +250,7 @@ export type DeliveryUpdateCreateInput = {
   emailed?: boolean
   createdAt?: Date | string
   order: Prisma.OrderCreateNestedOneWithoutDeliveryUpdatesInput
+  emailLogs?: Prisma.EmailLogCreateNestedManyWithoutDeliveryUpdateInput
 }
 
 export type DeliveryUpdateUncheckedCreateInput = {
@@ -256,6 +260,7 @@ export type DeliveryUpdateUncheckedCreateInput = {
   message: string
   emailed?: boolean
   createdAt?: Date | string
+  emailLogs?: Prisma.EmailLogUncheckedCreateNestedManyWithoutDeliveryUpdateInput
 }
 
 export type DeliveryUpdateUpdateInput = {
@@ -265,6 +270,7 @@ export type DeliveryUpdateUpdateInput = {
   emailed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   order?: Prisma.OrderUpdateOneRequiredWithoutDeliveryUpdatesNestedInput
+  emailLogs?: Prisma.EmailLogUpdateManyWithoutDeliveryUpdateNestedInput
 }
 
 export type DeliveryUpdateUncheckedUpdateInput = {
@@ -274,6 +280,7 @@ export type DeliveryUpdateUncheckedUpdateInput = {
   message?: Prisma.StringFieldUpdateOperationsInput | string
   emailed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  emailLogs?: Prisma.EmailLogUncheckedUpdateManyWithoutDeliveryUpdateNestedInput
 }
 
 export type DeliveryUpdateCreateManyInput = {
@@ -339,6 +346,11 @@ export type DeliveryUpdateMinOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
 }
 
+export type DeliveryUpdateNullableScalarRelationFilter = {
+  is?: Prisma.DeliveryUpdateWhereInput | null
+  isNot?: Prisma.DeliveryUpdateWhereInput | null
+}
+
 export type DeliveryUpdateCreateNestedManyWithoutOrderInput = {
   create?: Prisma.XOR<Prisma.DeliveryUpdateCreateWithoutOrderInput, Prisma.DeliveryUpdateUncheckedCreateWithoutOrderInput> | Prisma.DeliveryUpdateCreateWithoutOrderInput[] | Prisma.DeliveryUpdateUncheckedCreateWithoutOrderInput[]
   connectOrCreate?: Prisma.DeliveryUpdateCreateOrConnectWithoutOrderInput | Prisma.DeliveryUpdateCreateOrConnectWithoutOrderInput[]
@@ -381,12 +393,29 @@ export type DeliveryUpdateUncheckedUpdateManyWithoutOrderNestedInput = {
   deleteMany?: Prisma.DeliveryUpdateScalarWhereInput | Prisma.DeliveryUpdateScalarWhereInput[]
 }
 
+export type DeliveryUpdateCreateNestedOneWithoutEmailLogsInput = {
+  create?: Prisma.XOR<Prisma.DeliveryUpdateCreateWithoutEmailLogsInput, Prisma.DeliveryUpdateUncheckedCreateWithoutEmailLogsInput>
+  connectOrCreate?: Prisma.DeliveryUpdateCreateOrConnectWithoutEmailLogsInput
+  connect?: Prisma.DeliveryUpdateWhereUniqueInput
+}
+
+export type DeliveryUpdateUpdateOneWithoutEmailLogsNestedInput = {
+  create?: Prisma.XOR<Prisma.DeliveryUpdateCreateWithoutEmailLogsInput, Prisma.DeliveryUpdateUncheckedCreateWithoutEmailLogsInput>
+  connectOrCreate?: Prisma.DeliveryUpdateCreateOrConnectWithoutEmailLogsInput
+  upsert?: Prisma.DeliveryUpdateUpsertWithoutEmailLogsInput
+  disconnect?: Prisma.DeliveryUpdateWhereInput | boolean
+  delete?: Prisma.DeliveryUpdateWhereInput | boolean
+  connect?: Prisma.DeliveryUpdateWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.DeliveryUpdateUpdateToOneWithWhereWithoutEmailLogsInput, Prisma.DeliveryUpdateUpdateWithoutEmailLogsInput>, Prisma.DeliveryUpdateUncheckedUpdateWithoutEmailLogsInput>
+}
+
 export type DeliveryUpdateCreateWithoutOrderInput = {
   id?: string
   status: $Enums.DeliveryStatus
   message: string
   emailed?: boolean
   createdAt?: Date | string
+  emailLogs?: Prisma.EmailLogCreateNestedManyWithoutDeliveryUpdateInput
 }
 
 export type DeliveryUpdateUncheckedCreateWithoutOrderInput = {
@@ -395,6 +424,7 @@ export type DeliveryUpdateUncheckedCreateWithoutOrderInput = {
   message: string
   emailed?: boolean
   createdAt?: Date | string
+  emailLogs?: Prisma.EmailLogUncheckedCreateNestedManyWithoutDeliveryUpdateInput
 }
 
 export type DeliveryUpdateCreateOrConnectWithoutOrderInput = {
@@ -435,6 +465,58 @@ export type DeliveryUpdateScalarWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"DeliveryUpdate"> | Date | string
 }
 
+export type DeliveryUpdateCreateWithoutEmailLogsInput = {
+  id?: string
+  status: $Enums.DeliveryStatus
+  message: string
+  emailed?: boolean
+  createdAt?: Date | string
+  order: Prisma.OrderCreateNestedOneWithoutDeliveryUpdatesInput
+}
+
+export type DeliveryUpdateUncheckedCreateWithoutEmailLogsInput = {
+  id?: string
+  orderId: string
+  status: $Enums.DeliveryStatus
+  message: string
+  emailed?: boolean
+  createdAt?: Date | string
+}
+
+export type DeliveryUpdateCreateOrConnectWithoutEmailLogsInput = {
+  where: Prisma.DeliveryUpdateWhereUniqueInput
+  create: Prisma.XOR<Prisma.DeliveryUpdateCreateWithoutEmailLogsInput, Prisma.DeliveryUpdateUncheckedCreateWithoutEmailLogsInput>
+}
+
+export type DeliveryUpdateUpsertWithoutEmailLogsInput = {
+  update: Prisma.XOR<Prisma.DeliveryUpdateUpdateWithoutEmailLogsInput, Prisma.DeliveryUpdateUncheckedUpdateWithoutEmailLogsInput>
+  create: Prisma.XOR<Prisma.DeliveryUpdateCreateWithoutEmailLogsInput, Prisma.DeliveryUpdateUncheckedCreateWithoutEmailLogsInput>
+  where?: Prisma.DeliveryUpdateWhereInput
+}
+
+export type DeliveryUpdateUpdateToOneWithWhereWithoutEmailLogsInput = {
+  where?: Prisma.DeliveryUpdateWhereInput
+  data: Prisma.XOR<Prisma.DeliveryUpdateUpdateWithoutEmailLogsInput, Prisma.DeliveryUpdateUncheckedUpdateWithoutEmailLogsInput>
+}
+
+export type DeliveryUpdateUpdateWithoutEmailLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumDeliveryStatusFieldUpdateOperationsInput | $Enums.DeliveryStatus
+  message?: Prisma.StringFieldUpdateOperationsInput | string
+  emailed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  order?: Prisma.OrderUpdateOneRequiredWithoutDeliveryUpdatesNestedInput
+}
+
+export type DeliveryUpdateUncheckedUpdateWithoutEmailLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  orderId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumDeliveryStatusFieldUpdateOperationsInput | $Enums.DeliveryStatus
+  message?: Prisma.StringFieldUpdateOperationsInput | string
+  emailed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type DeliveryUpdateCreateManyOrderInput = {
   id?: string
   status: $Enums.DeliveryStatus
@@ -449,6 +531,7 @@ export type DeliveryUpdateUpdateWithoutOrderInput = {
   message?: Prisma.StringFieldUpdateOperationsInput | string
   emailed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  emailLogs?: Prisma.EmailLogUpdateManyWithoutDeliveryUpdateNestedInput
 }
 
 export type DeliveryUpdateUncheckedUpdateWithoutOrderInput = {
@@ -457,6 +540,7 @@ export type DeliveryUpdateUncheckedUpdateWithoutOrderInput = {
   message?: Prisma.StringFieldUpdateOperationsInput | string
   emailed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  emailLogs?: Prisma.EmailLogUncheckedUpdateManyWithoutDeliveryUpdateNestedInput
 }
 
 export type DeliveryUpdateUncheckedUpdateManyWithoutOrderInput = {
@@ -468,6 +552,35 @@ export type DeliveryUpdateUncheckedUpdateManyWithoutOrderInput = {
 }
 
 
+/**
+ * Count Type DeliveryUpdateCountOutputType
+ */
+
+export type DeliveryUpdateCountOutputType = {
+  emailLogs: number
+}
+
+export type DeliveryUpdateCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  emailLogs?: boolean | DeliveryUpdateCountOutputTypeCountEmailLogsArgs
+}
+
+/**
+ * DeliveryUpdateCountOutputType without action
+ */
+export type DeliveryUpdateCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DeliveryUpdateCountOutputType
+   */
+  select?: Prisma.DeliveryUpdateCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * DeliveryUpdateCountOutputType without action
+ */
+export type DeliveryUpdateCountOutputTypeCountEmailLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.EmailLogWhereInput
+}
+
 
 export type DeliveryUpdateSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -477,6 +590,8 @@ export type DeliveryUpdateSelect<ExtArgs extends runtime.Types.Extensions.Intern
   emailed?: boolean
   createdAt?: boolean
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
+  emailLogs?: boolean | Prisma.DeliveryUpdate$emailLogsArgs<ExtArgs>
+  _count?: boolean | Prisma.DeliveryUpdateCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["deliveryUpdate"]>
 
 export type DeliveryUpdateSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -511,6 +626,8 @@ export type DeliveryUpdateSelectScalar = {
 export type DeliveryUpdateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderId" | "status" | "message" | "emailed" | "createdAt", ExtArgs["result"]["deliveryUpdate"]>
 export type DeliveryUpdateInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
+  emailLogs?: boolean | Prisma.DeliveryUpdate$emailLogsArgs<ExtArgs>
+  _count?: boolean | Prisma.DeliveryUpdateCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type DeliveryUpdateIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
@@ -523,6 +640,7 @@ export type $DeliveryUpdatePayload<ExtArgs extends runtime.Types.Extensions.Inte
   name: "DeliveryUpdate"
   objects: {
     order: Prisma.$OrderPayload<ExtArgs>
+    emailLogs: Prisma.$EmailLogPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -926,6 +1044,7 @@ readonly fields: DeliveryUpdateFieldRefs;
 export interface Prisma__DeliveryUpdateClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   order<T extends Prisma.OrderDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.OrderDefaultArgs<ExtArgs>>): Prisma.Prisma__OrderClient<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  emailLogs<T extends Prisma.DeliveryUpdate$emailLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.DeliveryUpdate$emailLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1359,6 +1478,30 @@ export type DeliveryUpdateDeleteManyArgs<ExtArgs extends runtime.Types.Extension
    * Limit how many DeliveryUpdates to delete.
    */
   limit?: number
+}
+
+/**
+ * DeliveryUpdate.emailLogs
+ */
+export type DeliveryUpdate$emailLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the EmailLog
+   */
+  select?: Prisma.EmailLogSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the EmailLog
+   */
+  omit?: Prisma.EmailLogOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.EmailLogInclude<ExtArgs> | null
+  where?: Prisma.EmailLogWhereInput
+  orderBy?: Prisma.EmailLogOrderByWithRelationInput | Prisma.EmailLogOrderByWithRelationInput[]
+  cursor?: Prisma.EmailLogWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.EmailLogScalarFieldEnum | Prisma.EmailLogScalarFieldEnum[]
 }
 
 /**

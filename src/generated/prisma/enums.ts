@@ -68,3 +68,31 @@ export const DeliveryStatus = {
 } as const
 
 export type DeliveryStatus = (typeof DeliveryStatus)[keyof typeof DeliveryStatus]
+
+
+export const EmailRecipientRole = {
+  CUSTOMER: 'CUSTOMER',
+  OWNER: 'OWNER'
+} as const
+
+export type EmailRecipientRole = (typeof EmailRecipientRole)[keyof typeof EmailRecipientRole]
+
+
+export const EmailEvent = {
+  ORDER_CONFIRMATION: 'ORDER_CONFIRMATION',
+  OWNER_ORDER_NOTIFICATION: 'OWNER_ORDER_NOTIFICATION',
+  DELIVERY_UPDATE: 'DELIVERY_UPDATE',
+  OWNER_DELIVERY_UPDATE: 'OWNER_DELIVERY_UPDATE'
+} as const
+
+export type EmailEvent = (typeof EmailEvent)[keyof typeof EmailEvent]
+
+
+export const EmailStatus = {
+  PENDING: 'PENDING',
+  SENT: 'SENT',
+  FAILED: 'FAILED',
+  SKIPPED: 'SKIPPED'
+} as const
+
+export type EmailStatus = (typeof EmailStatus)[keyof typeof EmailStatus]

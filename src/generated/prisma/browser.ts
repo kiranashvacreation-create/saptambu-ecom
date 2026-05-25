@@ -58,6 +58,11 @@ export type OrderItem = Prisma.OrderItemModel
  */
 export type DeliveryUpdate = Prisma.DeliveryUpdateModel
 /**
+ * Model EmailLog
+ * 
+ */
+export type EmailLog = Prisma.EmailLogModel
+/**
  * Model StockAdjustment
  * 
  */

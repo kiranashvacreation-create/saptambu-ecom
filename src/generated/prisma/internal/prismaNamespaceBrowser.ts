@@ -59,6 +59,7 @@ export const ModelName = {
   Order: 'Order',
   OrderItem: 'OrderItem',
   DeliveryUpdate: 'DeliveryUpdate',
+  EmailLog: 'EmailLog',
   StockAdjustment: 'StockAdjustment',
   AdminUser: 'AdminUser',
   SiteSetting: 'SiteSetting',
@@ -213,6 +214,23 @@ export const DeliveryUpdateScalarFieldEnum = {
 } as const
 
 export type DeliveryUpdateScalarFieldEnum = (typeof DeliveryUpdateScalarFieldEnum)[keyof typeof DeliveryUpdateScalarFieldEnum]
+
+
+export const EmailLogScalarFieldEnum = {
+  id: 'id',
+  recipient: 'recipient',
+  recipientRole: 'recipientRole',
+  event: 'event',
+  subject: 'subject',
+  status: 'status',
+  orderId: 'orderId',
+  deliveryUpdateId: 'deliveryUpdateId',
+  error: 'error',
+  sentAt: 'sentAt',
+  createdAt: 'createdAt'
+} as const
+
+export type EmailLogScalarFieldEnum = (typeof EmailLogScalarFieldEnum)[keyof typeof EmailLogScalarFieldEnum]
 
 
 export const StockAdjustmentScalarFieldEnum = {

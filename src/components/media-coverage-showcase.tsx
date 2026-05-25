@@ -23,7 +23,7 @@ const stagger = {
 
 function MediaLogo({ item, index }: { item: MediaCoverageItem; index: number }) {
   return (
-    <div className="relative grid aspect-[1.08] min-h-48 place-items-center overflow-hidden rounded-[1.25rem] border border-[#ead8b8]/70 bg-[#fff7e7]/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+    <div className="relative grid aspect-[1.08] min-h-56 place-items-center overflow-hidden rounded-[1.25rem] border border-[#ead8b8]/70 bg-[#fff7e7]/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] sm:min-h-64">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_22%,rgba(255,241,196,0.95),transparent_34%),linear-gradient(135deg,rgba(154,47,34,0.12),rgba(28,109,98,0.12))]" />
       <motion.div
         aria-hidden="true"
@@ -32,14 +32,22 @@ function MediaLogo({ item, index }: { item: MediaCoverageItem; index: number }) 
         transition={{ duration: 4 + index * 0.4, repeat: Infinity, ease: "easeInOut" }}
       />
       {item.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={item.imageUrl} alt={item.imageAlt} className="relative z-10 max-h-28 max-w-[72%] rounded-xl object-contain drop-shadow-sm" />
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={item.imageUrl} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-12 blur-2xl" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={item.imageUrl}
+            alt={item.imageAlt}
+            className="relative z-10 h-[68%] max-h-[25rem] w-auto max-w-[86%] rounded-xl object-contain drop-shadow-[0_18px_24px_rgba(35,24,15,0.24)]"
+          />
+        </>
       ) : (
         <div className="relative z-10 grid h-24 w-24 place-items-center rounded-full border border-[#c58a2b]/30 bg-white/70 text-[#9b2f22]">
           <Newspaper size={34} strokeWidth={1.5} />
         </div>
       )}
-      <span className="absolute bottom-4 left-4 rounded-full border border-[#c58a2b]/25 bg-white/65 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[#8b6534] backdrop-blur">
+      <span className="absolute bottom-4 left-4 max-w-[calc(100%-2rem)] rounded-full border border-[#c58a2b]/25 bg-white/78 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#8b6534] backdrop-blur">
         {item.publishedLabel}
       </span>
     </div>
@@ -133,7 +141,7 @@ export function MediaCoverageShowcase({ items }: { items: MediaCoverageItem[] })
           <motion.h1
             variants={fadeUp}
             transition={{ duration: 0.8, ease }}
-            className="mt-7 max-w-4xl text-balance text-5xl font-semibold leading-[0.95] tracking-[-0.04em] text-[#1c1510] sm:text-6xl lg:text-7xl"
+          className="mt-7 max-w-4xl text-balance break-words text-4xl font-semibold leading-[0.98] tracking-[-0.035em] text-[#1c1510] sm:text-6xl lg:text-7xl"
           >
             Media Coverage for <span className="text-[#9b2f22]">Saptambu</span>
           </motion.h1>

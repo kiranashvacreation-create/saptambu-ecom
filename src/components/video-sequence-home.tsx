@@ -346,7 +346,7 @@ function setVideoTime(video: HTMLVideoElement, anchor: number, force = false) {
 }
 
 function getTextPanelClass(layout: ChapterLayout) {
-  const base = "pointer-events-none absolute z-40 will-change-transform";
+  const base = "pointer-events-none absolute z-40 min-w-0 overflow-hidden break-words will-change-transform";
 
   if (layout === "right") {
     return `${base} right-[clamp(1.4rem,7vw,7rem)] top-1/2 w-[min(33rem,calc(100vw-2.8rem))] text-right md:w-[min(33rem,38vw)]`;
@@ -1224,7 +1224,7 @@ export function VideoSequenceHome() {
             event.preventDefault();
             window.location.assign("/collections/all");
           }}
-          className="focus-ring pointer-events-auto absolute right-6 top-[calc(5vh+1rem)] z-[75] rounded-full border border-[#d2a85c]/45 bg-black/32 px-4 py-2 font-mono text-[0.62rem] uppercase tracking-[0.22em] text-[#f4ead7]/86 backdrop-blur-md transition hover:border-[#d2a85c] hover:bg-[#d2a85c] hover:text-black md:right-8"
+          className="focus-ring pointer-events-auto absolute right-4 top-[calc(5vh+0.8rem)] z-[75] max-w-[calc(100vw-2rem)] whitespace-normal rounded-full border border-[#d2a85c]/45 bg-black/32 px-3.5 py-2 text-center font-mono text-[0.58rem] uppercase leading-snug tracking-[0.14em] text-[#f4ead7]/86 backdrop-blur-md transition hover:border-[#d2a85c] hover:bg-[#d2a85c] hover:text-black sm:right-6 sm:tracking-[0.22em] md:right-8"
         >
           Skip to Products
         </Link>
@@ -1248,26 +1248,26 @@ export function VideoSequenceHome() {
             {chapter.layout === "split" ? (
               <>
                 <div>
-                  <div className="font-mono text-[0.58rem] uppercase tracking-[0.46em] text-[#d2a85c]/78 sm:text-[0.62rem]">
+                  <div className="max-w-full whitespace-normal break-words font-mono text-[0.55rem] uppercase leading-relaxed tracking-[0.18em] text-[#d2a85c]/78 sm:text-[0.62rem] sm:tracking-[0.46em]">
                     {chapter.eyebrow} — {chapter.phase}
                   </div>
-                  <h2 className="mt-4 max-w-[27rem] text-balance font-serif text-[clamp(2.05rem,5vw,4.8rem)] font-light leading-[0.92] tracking-[0.012em] text-[#f4ead7]">
+                  <h2 className="mt-4 max-w-[27rem] text-balance break-words font-serif text-[clamp(2rem,15vw,4.8rem)] font-light leading-[0.96] tracking-[0.012em] text-[#f4ead7] sm:text-[clamp(2.05rem,5vw,4.8rem)] sm:leading-[0.92]">
                     {chapter.title}
                   </h2>
                 </div>
-                <p className="max-w-[24rem] self-center justify-self-end text-right font-serif text-[clamp(1rem,1.45vw,1.28rem)] italic leading-relaxed tracking-[0.075em] text-[#f4ead7]/70">
+                <p className="max-w-[24rem] self-center justify-self-start break-words text-left font-serif text-[clamp(0.96rem,4.8vw,1.28rem)] italic leading-relaxed tracking-[0.025em] text-[#f4ead7]/70 sm:tracking-[0.075em] md:justify-self-end md:text-right">
                   {chapter.body}
                 </p>
               </>
             ) : (
               <>
-                <div className="font-mono text-[0.58rem] uppercase tracking-[0.46em] text-[#d2a85c]/78 sm:text-[0.62rem]">
+                <div className="max-w-full whitespace-normal break-words font-mono text-[0.55rem] uppercase leading-relaxed tracking-[0.18em] text-[#d2a85c]/78 sm:text-[0.62rem] sm:tracking-[0.46em]">
                   {chapter.eyebrow} — {chapter.phase}
                 </div>
-                <h2 className="mt-4 max-w-[31rem] text-balance font-serif text-[clamp(2.05rem,5.1vw,4.95rem)] font-light leading-[0.92] tracking-[0.012em] text-[#f4ead7]">
+                <h2 className="mt-4 max-w-[31rem] text-balance break-words font-serif text-[clamp(2rem,15vw,4.95rem)] font-light leading-[0.96] tracking-[0.012em] text-[#f4ead7] sm:text-[clamp(2.05rem,5.1vw,4.95rem)] sm:leading-[0.92]">
                   {chapter.title}
                 </h2>
-                <p className="mt-5 max-w-[26rem] font-serif text-[clamp(0.98rem,1.42vw,1.24rem)] italic leading-relaxed tracking-[0.075em] text-[#f4ead7]/68">
+                <p className="mt-5 max-w-[26rem] break-words font-serif text-[clamp(0.96rem,4.8vw,1.24rem)] italic leading-relaxed tracking-[0.025em] text-[#f4ead7]/68 sm:text-[clamp(0.98rem,1.42vw,1.24rem)] sm:tracking-[0.075em]">
                   {chapter.body}
                 </p>
               </>
@@ -1277,9 +1277,9 @@ export function VideoSequenceHome() {
 
         <Link
           href="/collections/all"
-          className="essence-product-cta focus-ring pointer-events-none absolute left-1/2 top-[calc(50%+32vh)] z-[46] -translate-x-1/2 translate-y-3 scale-95 overflow-hidden rounded-full border border-[#ffe8ae]/70 bg-[linear-gradient(135deg,#fff0bf_0%,#e2b65d_42%,#a96624_100%)] px-7 py-3.5 font-mono text-[0.64rem] font-bold uppercase tracking-[0.3em] text-[#180e06] opacity-0 shadow-[0_0_24px_rgba(210,168,92,0.32),0_16px_42px_rgba(0,0,0,0.36)] backdrop-blur-md transition duration-500 hover:border-[#fff7d3] hover:shadow-[0_0_42px_rgba(240,215,156,0.52),0_18px_56px_rgba(0,0,0,0.42)] sm:px-8 md:top-[calc(50%+34vh)]"
+          className="essence-product-cta focus-ring pointer-events-none absolute left-1/2 top-[calc(50%+32vh)] z-[46] max-w-[calc(100vw-2rem)] -translate-x-1/2 translate-y-3 scale-95 overflow-hidden whitespace-normal rounded-full border border-[#ffe8ae]/70 bg-[linear-gradient(135deg,#fff0bf_0%,#e2b65d_42%,#a96624_100%)] px-5 py-3.5 text-center font-mono text-[0.58rem] font-bold uppercase leading-snug tracking-[0.16em] text-[#180e06] opacity-0 shadow-[0_0_24px_rgba(210,168,92,0.32),0_16px_42px_rgba(0,0,0,0.36)] backdrop-blur-md transition duration-500 hover:border-[#fff7d3] hover:shadow-[0_0_42px_rgba(240,215,156,0.52),0_18px_56px_rgba(0,0,0,0.42)] sm:px-8 sm:text-[0.64rem] sm:tracking-[0.3em] md:top-[calc(50%+34vh)]"
         >
-          <span className="relative z-10 flex items-center gap-3">
+          <span className="relative z-10 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
             <span className="h-1.5 w-1.5 rounded-full bg-[#fff8d2] shadow-[0_0_16px_rgba(255,248,210,0.95)]" />
             Explore Products
           </span>

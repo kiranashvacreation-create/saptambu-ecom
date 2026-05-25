@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { currentPrice, listRecentProducts } from "@/lib/catalog";
+import { fallbackMediaCoverageItems, getFallbackMediaCoverageItem } from "@/lib/media-coverage";
 import { formatMoney } from "@/lib/money";
 import { getPublishedMediaArticle, listRecentPublishedMediaArticles } from "@/lib/media";
 
@@ -18,15 +19,54 @@ function formatDate(value: Date | null) {
 
 export default async function MediaArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const [article, recentMedia, recentProducts] = await Promise.all([
+  const [dbArticle, recentMedia, recentProducts] = await Promise.all([
     getPublishedMediaArticle(slug),
     listRecentPublishedMediaArticles({ excludeSlug: slug, limit: 4 }),
     listRecentProducts(3),
   ]);
+  const fallbackArticle = dbArticle ? null : getFallbackMediaCoverageItem(slug);
+  const article = dbArticle
+    ? {
+        bodyHtml: dbArticle.bodyHtml,
+        coverImageAlt: dbArticle.coverImageAlt,
+        coverImageUrl: dbArticle.coverImageUrl,
+        excerpt: dbArticle.excerpt,
+        publishedAt: dbArticle.publishedAt,
+        sourceName: dbArticle.sourceName,
+        sourceUrl: dbArticle.sourceUrl,
+        title: dbArticle.title,
+      }
+    : fallbackArticle
+      ? {
+          bodyHtml: fallbackArticle.bodyHtml || "",
+          coverImageAlt: fallbackArticle.imageAlt,
+          coverImageUrl: fallbackArticle.imageUrl,
+          excerpt: fallbackArticle.excerpt,
+          publishedAt: null,
+          sourceName: fallbackArticle.sourceName,
+          sourceUrl: fallbackArticle.sourceUrl,
+          title: fallbackArticle.headline,
+        }
+      : null;
 
   if (!article) notFound();
 
   const publishedLabel = formatDate(article.publishedAt);
+  const bodyHtml =
+    article.bodyHtml.trim() ||
+    `<p>${article.excerpt}</p><p>This media story has been archived into the Saptambu press room. Full editorial details will be updated here soon.</p>`;
+  const sidebarMedia =
+    recentMedia.length || !fallbackArticle
+      ? recentMedia
+      : fallbackMediaCoverageItems
+          .filter((item) => item.id !== slug)
+          .map((item) => ({
+            id: item.id,
+            slug: item.id,
+            sourceName: item.sourceName,
+            title: item.headline,
+            publishedAt: null,
+          }));
 
   return (
     <main className="relative overflow-hidden bg-[#fbfaf6] text-[#1f1812]">
@@ -47,7 +87,7 @@ export default async function MediaArticlePage({ params }: { params: Promise<{ s
                     alt={article.coverImageAlt || article.title}
                     fill
                     sizes="(max-width: 1024px) 100vw, 760px"
-                    className="object-cover"
+                    className="object-contain p-5"
                     priority
                   />
                 </div>
@@ -79,15 +119,15 @@ export default async function MediaArticlePage({ params }: { params: Promise<{ s
               </div>
             </div>
 
-            <div className="prose-lite mt-8 rounded-[1.5rem] border border-[#ead8b8] bg-white/72 p-6 text-[#4e443c] shadow-[0_22px_60px_rgba(57,34,18,0.07)] sm:p-8" dangerouslySetInnerHTML={{ __html: article.bodyHtml }} />
+            <div className="prose-lite mt-8 rounded-[1.5rem] border border-[#ead8b8] bg-white/72 p-6 text-[#4e443c] shadow-[0_22px_60px_rgba(57,34,18,0.07)] sm:p-8" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
           </div>
 
           <aside className="grid gap-5 lg:sticky lg:top-24">
             <section className="rounded-[1.5rem] border border-[#ead8b8] bg-white/78 p-5 shadow-[0_22px_60px_rgba(57,34,18,0.08)] backdrop-blur-xl">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#9b2f22]">Recent Media</p>
               <div className="mt-5 grid gap-4">
-                {recentMedia.length ? (
-                  recentMedia.map((item) => (
+                {sidebarMedia.length ? (
+                  sidebarMedia.map((item) => (
                     <Link key={item.id} href={`/media/${item.slug}`} className="group block rounded-2xl border border-[#ead8b8]/75 bg-[#fffaf0]/72 p-4 hover:-translate-y-0.5 hover:border-[#d9bb83]">
                       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8b6534]">{item.sourceName || "Saptambu Media"}</p>
                       <h2 className="mt-2 line-clamp-2 font-semibold leading-snug text-[#241a14]">{item.title}</h2>

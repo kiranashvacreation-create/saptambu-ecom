@@ -13,6 +13,8 @@
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
+    "migrate:cloudinary": "tsx scripts/migrate-cloudinary.ts",
+    "migrate:cloudinary:dry-run": "tsx scripts/migrate-cloudinary.ts --dry-run",
     "local:db": "docker compose up -d postgres",
     "local:setup": "npm run local:db && npm run db:push && npm run db:seed",
     "railway:setup": "npm run db:push && npm run db:seed"

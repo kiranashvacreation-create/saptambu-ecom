@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { EmailEvent, EmailStatus } from "@/generated/prisma/client";
 import { requireDb } from "@/lib/db";
-import { sendOrderEmails } from "@/lib/email";
+import { sendOrderConfirmationEmails } from "@/lib/email";
 import { verifyRazorpaySignature } from "@/lib/razorpay";
 
 const schema = z.object({
@@ -10,6 +11,35 @@ const schema = z.object({
   razorpay_payment_id: z.string(),
   razorpay_signature: z.string(),
 });
+
+async function sendMissingOrderConfirmationEmails(
+  db: ReturnType<typeof requireDb>,
+  order: Parameters<typeof sendOrderConfirmationEmails>[0],
+) {
+  try {
+    const sentLogs = await db.emailLog.findMany({
+      where: {
+        orderId: order.id,
+        status: EmailStatus.SENT,
+        event: { in: [EmailEvent.ORDER_CONFIRMATION, EmailEvent.OWNER_ORDER_NOTIFICATION] },
+      },
+      select: { event: true },
+    });
+    const sentEvents = new Set(sentLogs.map((log) => log.event));
+
+    if (sentEvents.has(EmailEvent.ORDER_CONFIRMATION) && sentEvents.has(EmailEvent.OWNER_ORDER_NOTIFICATION)) {
+      return [];
+    }
+
+    return sendOrderConfirmationEmails(order, {
+      includeCustomer: !sentEvents.has(EmailEvent.ORDER_CONFIRMATION),
+      includeOwner: !sentEvents.has(EmailEvent.OWNER_ORDER_NOTIFICATION),
+    });
+  } catch (error) {
+    console.warn("Unable to inspect order email logs before sending.", error);
+    return sendOrderConfirmationEmails(order);
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -35,6 +65,7 @@ export async function POST(request: Request) {
     }
 
     if (order.paymentStatus === "PAID") {
+      await sendMissingOrderConfirmationEmails(db, order);
       return NextResponse.json({ ok: true });
     }
 
@@ -88,7 +119,7 @@ export async function POST(request: Request) {
       where: { id: order.id },
       include: { items: true },
     });
-    await sendOrderEmails(paidOrder);
+    await sendMissingOrderConfirmationEmails(db, paidOrder);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

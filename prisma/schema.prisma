@@ -50,6 +50,25 @@ enum DeliveryStatus {
   CANCELLED
 }
 
+enum EmailRecipientRole {
+  CUSTOMER
+  OWNER
+}
+
+enum EmailEvent {
+  ORDER_CONFIRMATION
+  OWNER_ORDER_NOTIFICATION
+  DELIVERY_UPDATE
+  OWNER_DELIVERY_UPDATE
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
 model Product {
   id                String             @id @default(cuid())
   title             String
@@ -157,6 +176,7 @@ model Order {
   discountCode          DiscountCode?    @relation(fields: [discountCodeId], references: [id])
   items                 OrderItem[]
   deliveryUpdates       DeliveryUpdate[]
+  emailLogs             EmailLog[]
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
 
@@ -191,9 +211,32 @@ model DeliveryUpdate {
   message   String
   emailed   Boolean        @default(false)
   order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  emailLogs EmailLog[]
   createdAt DateTime       @default(now())
 
   @@index([orderId])
+}
+
+model EmailLog {
+  id               String             @id @default(cuid())
+  recipient        String
+  recipientRole    EmailRecipientRole
+  event            EmailEvent
+  subject          String
+  status           EmailStatus        @default(PENDING)
+  orderId          String?
+  deliveryUpdateId String?
+  error            String?
+  sentAt           DateTime?
+  createdAt        DateTime           @default(now())
+  order            Order?             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  deliveryUpdate   DeliveryUpdate?    @relation(fields: [deliveryUpdateId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([deliveryUpdateId])
+  @@index([event])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model StockAdjustment {

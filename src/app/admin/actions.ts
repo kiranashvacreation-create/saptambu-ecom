@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import sanitizeHtml from "sanitize-html";
+import { EmailEvent, EmailStatus } from "@/generated/prisma/client";
 import { clearAdminSession, requireAdmin, setAdminSession, verifyAdmin } from "@/lib/auth";
 import { requireDb } from "@/lib/db";
-import { sendDeliveryEmail } from "@/lib/email";
+import { sendDeliveryUpdateEmails, sendOrderConfirmationEmails } from "@/lib/email";
 import { slugify } from "@/lib/slugs";
 
 function text(formData: FormData, key: string) {
@@ -249,6 +250,23 @@ export async function deleteDiscountAction(formData: FormData) {
   redirect("/admin/discounts");
 }
 
+export async function resendOrderEmailsAction(formData: FormData) {
+  await requireAdmin();
+  const db = requireDb();
+  const orderId = text(formData, "orderId");
+  const order = await db.order.findUnique({
+    where: { id: orderId },
+    include: { items: true },
+  });
+
+  if (order) {
+    await sendOrderConfirmationEmails(order);
+    revalidatePath(`/admin/orders/${orderId}`);
+  }
+
+  redirect(order ? `/admin/orders/${orderId}` : "/admin/orders");
+}
+
 export async function updateOrderDeliveryAction(formData: FormData) {
   await requireAdmin();
   const db = requireDb();
@@ -264,33 +282,46 @@ export async function updateOrderDeliveryAction(formData: FormData) {
   const trackingUrl = text(formData, "trackingUrl");
   const awb = text(formData, "awb");
 
-  const order = await db.order.update({
-    where: { id: orderId },
-    data: {
-      deliveryStatus,
-      deliveryMessage: message,
-      trackingUrl: trackingUrl || null,
-      awb: awb || null,
-      status:
-        deliveryStatus === "DELIVERED"
-          ? "DELIVERED"
-          : deliveryStatus === "PARCELLED"
-            ? "PARCELLED"
-            : deliveryStatus === "CANCELLED"
-              ? "CANCELLED"
-              : "PROCESSING",
-      deliveryUpdates: {
-        create: {
-          status: deliveryStatus,
-          message,
-          emailed: true,
-        },
+  const { order, deliveryUpdate } = await db.$transaction(async (tx) => {
+    const order = await tx.order.update({
+      where: { id: orderId },
+      data: {
+        deliveryStatus,
+        deliveryMessage: message,
+        trackingUrl: trackingUrl || null,
+        awb: awb || null,
+        status:
+          deliveryStatus === "DELIVERED"
+            ? "DELIVERED"
+            : deliveryStatus === "PARCELLED"
+              ? "PARCELLED"
+              : deliveryStatus === "CANCELLED"
+                ? "CANCELLED"
+                : "PROCESSING",
       },
-    },
-    include: { items: true },
+      include: { items: true },
+    });
+
+    const deliveryUpdate = await tx.deliveryUpdate.create({
+      data: {
+        orderId,
+        status: deliveryStatus,
+        message,
+      },
+    });
+
+    return { order, deliveryUpdate };
   });
 
-  await sendDeliveryEmail(order, message);
+  const outcomes = await sendDeliveryUpdateEmails(order, deliveryUpdate);
+  const customerOutcome = outcomes.find((outcome) => outcome.event === EmailEvent.DELIVERY_UPDATE);
+
+  await db.deliveryUpdate.update({
+    where: { id: deliveryUpdate.id },
+    data: { emailed: customerOutcome?.status === EmailStatus.SENT },
+  });
+
+  revalidatePath(`/admin/orders/${orderId}`);
   redirect(`/admin/orders/${orderId}`);
 }
 

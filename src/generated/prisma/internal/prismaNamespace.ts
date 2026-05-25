@@ -392,6 +392,7 @@ export const ModelName = {
   Order: 'Order',
   OrderItem: 'OrderItem',
   DeliveryUpdate: 'DeliveryUpdate',
+  EmailLog: 'EmailLog',
   StockAdjustment: 'StockAdjustment',
   AdminUser: 'AdminUser',
   SiteSetting: 'SiteSetting',
@@ -412,7 +413,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "product" | "productImage" | "category" | "productCategory" | "discountCode" | "order" | "orderItem" | "deliveryUpdate" | "stockAdjustment" | "adminUser" | "siteSetting" | "pageContent" | "mediaArticle"
+    modelProps: "product" | "productImage" | "category" | "productCategory" | "discountCode" | "order" | "orderItem" | "deliveryUpdate" | "emailLog" | "stockAdjustment" | "adminUser" | "siteSetting" | "pageContent" | "mediaArticle"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1008,6 +1009,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    EmailLog: {
+      payload: Prisma.$EmailLogPayload<ExtArgs>
+      fields: Prisma.EmailLogFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.EmailLogFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailLogPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.EmailLogFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailLogPayload>
+        }
+        findFirst: {
+          args: Prisma.EmailLogFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailLogPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.EmailLogFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailLogPayload>
+        }
+        findMany: {
+          args: Prisma.EmailLogFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailLogPayload>[]
+        }
+        create: {
+          args: Prisma.EmailLogCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailLogPayload>
+        }
+        createMany: {
+          args: Prisma.EmailLogCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.EmailLogCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailLogPayload>[]
+        }
+        delete: {
+          args: Prisma.EmailLogDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailLogPayload>
+        }
+        update: {
+          args: Prisma.EmailLogUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailLogPayload>
+        }
+        deleteMany: {
+          args: Prisma.EmailLogDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.EmailLogUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.EmailLogUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailLogPayload>[]
+        }
+        upsert: {
+          args: Prisma.EmailLogUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailLogPayload>
+        }
+        aggregate: {
+          args: Prisma.EmailLogAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateEmailLog>
+        }
+        groupBy: {
+          args: Prisma.EmailLogGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailLogGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.EmailLogCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailLogCountAggregateOutputType> | number
+        }
+      }
+    }
     StockAdjustment: {
       payload: Prisma.$StockAdjustmentPayload<ExtArgs>
       fields: Prisma.StockAdjustmentFieldRefs
@@ -1550,6 +1625,23 @@ export const DeliveryUpdateScalarFieldEnum = {
 export type DeliveryUpdateScalarFieldEnum = (typeof DeliveryUpdateScalarFieldEnum)[keyof typeof DeliveryUpdateScalarFieldEnum]
 
 
+export const EmailLogScalarFieldEnum = {
+  id: 'id',
+  recipient: 'recipient',
+  recipientRole: 'recipientRole',
+  event: 'event',
+  subject: 'subject',
+  status: 'status',
+  orderId: 'orderId',
+  deliveryUpdateId: 'deliveryUpdateId',
+  error: 'error',
+  sentAt: 'sentAt',
+  createdAt: 'createdAt'
+} as const
+
+export type EmailLogScalarFieldEnum = (typeof EmailLogScalarFieldEnum)[keyof typeof EmailLogScalarFieldEnum]
+
+
 export const StockAdjustmentScalarFieldEnum = {
   id: 'id',
   productId: 'productId',
@@ -1777,6 +1869,48 @@ export type ListEnumDeliveryStatusFieldRefInput<$PrismaModel> = FieldRefInputTyp
 
 
 /**
+ * Reference to a field of type 'EmailRecipientRole'
+ */
+export type EnumEmailRecipientRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EmailRecipientRole'>
+    
+
+
+/**
+ * Reference to a field of type 'EmailRecipientRole[]'
+ */
+export type ListEnumEmailRecipientRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EmailRecipientRole[]'>
+    
+
+
+/**
+ * Reference to a field of type 'EmailEvent'
+ */
+export type EnumEmailEventFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EmailEvent'>
+    
+
+
+/**
+ * Reference to a field of type 'EmailEvent[]'
+ */
+export type ListEnumEmailEventFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EmailEvent[]'>
+    
+
+
+/**
+ * Reference to a field of type 'EmailStatus'
+ */
+export type EnumEmailStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EmailStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'EmailStatus[]'
+ */
+export type ListEnumEmailStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EmailStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'MediaStatus'
  */
 export type EnumMediaStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MediaStatus'>
@@ -1921,6 +2055,7 @@ export type GlobalOmitConfig = {
   order?: Prisma.OrderOmit
   orderItem?: Prisma.OrderItemOmit
   deliveryUpdate?: Prisma.DeliveryUpdateOmit
+  emailLog?: Prisma.EmailLogOmit
   stockAdjustment?: Prisma.StockAdjustmentOmit
   adminUser?: Prisma.AdminUserOmit
   siteSetting?: Prisma.SiteSettingOmit

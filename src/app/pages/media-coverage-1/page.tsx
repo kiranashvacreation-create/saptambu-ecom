@@ -25,7 +25,9 @@ export const metadata: Metadata = {
 
 export default async function MediaCoveragePage() {
   const publishedArticles = await listPublishedMediaArticles();
-  const items = publishedArticles.length ? publishedArticles.map(mapMediaArticleToCoverageItem) : fallbackMediaCoverageItems;
+  const dbItems = publishedArticles.map(mapMediaArticleToCoverageItem);
+  const dbHrefs = new Set(dbItems.map((item) => item.href));
+  const items = [...dbItems, ...fallbackMediaCoverageItems.filter((item) => !dbHrefs.has(item.href))];
 
   return <MediaCoverageShowcase items={items} />;
 }
