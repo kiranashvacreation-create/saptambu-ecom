@@ -87,6 +87,9 @@ function getTransporter() {
       host,
       port: Number(cleanEnvValue(process.env.SMTP_PORT) || 587),
       secure: cleanEnvValue(process.env.SMTP_SECURE) === "true",
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 12000,
       auth: {
         user,
         pass,

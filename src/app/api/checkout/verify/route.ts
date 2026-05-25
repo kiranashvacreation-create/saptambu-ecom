@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { z } from "zod";
 import { EmailEvent, EmailStatus } from "@/generated/prisma/client";
 import { requireDb } from "@/lib/db";
@@ -65,7 +65,13 @@ export async function POST(request: Request) {
     }
 
     if (order.paymentStatus === "PAID") {
-      await sendMissingOrderConfirmationEmails(db, order);
+      after(async () => {
+        try {
+          await sendMissingOrderConfirmationEmails(db, order);
+        } catch (error) {
+          console.warn("Unable to send already-paid order emails.", error);
+        }
+      });
       return NextResponse.json({ ok: true });
     }
 
@@ -119,7 +125,13 @@ export async function POST(request: Request) {
       where: { id: order.id },
       include: { items: true },
     });
-    await sendMissingOrderConfirmationEmails(db, paidOrder);
+    after(async () => {
+      try {
+        await sendMissingOrderConfirmationEmails(db, paidOrder);
+      } catch (error) {
+        console.warn("Unable to send paid order emails.", error);
+      }
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

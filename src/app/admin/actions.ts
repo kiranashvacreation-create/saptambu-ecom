@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import sanitizeHtml from "sanitize-html";
 import { EmailEvent, EmailStatus } from "@/generated/prisma/client";
 import { clearAdminSession, requireAdmin, setAdminSession, verifyAdmin } from "@/lib/auth";
@@ -313,12 +314,18 @@ export async function updateOrderDeliveryAction(formData: FormData) {
     return { order, deliveryUpdate };
   });
 
-  const outcomes = await sendDeliveryUpdateEmails(order, deliveryUpdate);
-  const customerOutcome = outcomes.find((outcome) => outcome.event === EmailEvent.DELIVERY_UPDATE);
+  after(async () => {
+    try {
+      const outcomes = await sendDeliveryUpdateEmails(order, deliveryUpdate);
+      const customerOutcome = outcomes.find((outcome) => outcome.event === EmailEvent.DELIVERY_UPDATE);
 
-  await db.deliveryUpdate.update({
-    where: { id: deliveryUpdate.id },
-    data: { emailed: customerOutcome?.status === EmailStatus.SENT },
+      await db.deliveryUpdate.update({
+        where: { id: deliveryUpdate.id },
+        data: { emailed: customerOutcome?.status === EmailStatus.SENT },
+      });
+    } catch (error) {
+      console.warn("Unable to send delivery update emails.", error);
+    }
   });
 
   revalidatePath(`/admin/orders/${orderId}`);
