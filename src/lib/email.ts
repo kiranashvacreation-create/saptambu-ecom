@@ -107,13 +107,12 @@ function createIpv4SocketFactory(
         return;
       }
 
-      const connectOptions = { host: address, port, family: 4, timeout: connectionTimeout, servername: host };
-      const socket = secure ? tls.connect(connectOptions) : net.connect(connectOptions);
-
-      socket.once("connect", () => {
+      const onConnect = () => {
         socket.setTimeout(0);
         done(null, { connection: socket, secured: secure });
-      });
+      };
+      const connectOptions = { host: address, port, family: 4, timeout: connectionTimeout, servername: host };
+      const socket = secure ? tls.connect(connectOptions, onConnect) : net.connect(connectOptions, onConnect);
 
       socket.once("error", done);
       socket.once("timeout", () => {
