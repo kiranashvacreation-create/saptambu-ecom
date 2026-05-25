@@ -165,13 +165,17 @@ function missingSmtpFields() {
     .map(([key]) => key);
 }
 
+function resendApiKey() {
+  return cleanEnvValue(process.env.RESEND_API_KEY);
+}
+
 function ownerEmail() {
   return normalizeEmailAddress(process.env.OWNER_EMAIL) || normalizeEmailAddress(process.env.SMTP_USER) || DEFAULT_OWNER_EMAIL;
 }
 
 function fromEmail() {
   const from = cleanHeaderValue(process.env.EMAIL_FROM);
-  if (from) return from;
+  if (from && (from.includes("<") || EMAIL_PATTERN.test(from))) return from;
 
   const owner = ownerEmail();
   return owner ? `Kiranashva Creations <${owner}>` : cleanHeaderValue(process.env.SMTP_USER);
@@ -401,6 +405,42 @@ async function updateEmailLog(id: string | null, status: EmailStatus, error?: un
   }
 }
 
+async function sendResendEmail(payload: EmailMessagePayload, apiKey: string, to: string): Promise<EmailMessageOutcome> {
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: fromEmail(),
+        to: [to],
+        subject: payload.subject,
+        text: payload.text,
+        html: payload.html,
+        reply_to: payload.replyTo ? normalizeEmailAddress(payload.replyTo) || undefined : undefined,
+      }),
+    });
+
+    if (response.ok) {
+      return { status: EmailStatus.SENT, recipient: to };
+    }
+
+    const body = await response.text();
+    const error = `Resend API returned ${response.status}${body ? `: ${body}` : ""}`;
+    console.warn("Resend email failed.", { to, subject: payload.subject, error });
+    return { status: EmailStatus.FAILED, recipient: to, error };
+  } catch (error) {
+    console.warn("Resend email failed.", { to, subject: payload.subject, error });
+    return {
+      status: EmailStatus.FAILED,
+      recipient: to,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 async function sendEmailMessage(payload: EmailMessagePayload): Promise<EmailMessageOutcome> {
   const to = normalizeEmailAddress(payload.to);
 
@@ -408,6 +448,11 @@ async function sendEmailMessage(payload: EmailMessagePayload): Promise<EmailMess
     const error = `Invalid email recipient: ${payload.to || "(missing recipient)"}`;
     console.warn("Email failed.", { to: payload.to, subject: payload.subject, error });
     return { status: EmailStatus.FAILED, recipient: payload.to, error };
+  }
+
+  const apiKey = resendApiKey();
+  if (apiKey) {
+    return sendResendEmail(payload, apiKey, to);
   }
 
   const mailer = getTransporter();
