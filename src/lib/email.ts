@@ -2,6 +2,7 @@ import "server-only";
 
 import dns from "node:dns";
 import net from "node:net";
+import tls from "node:tls";
 import nodemailer from "nodemailer";
 import type SMTPTransport from "nodemailer/lib/smtp-transport";
 import {
@@ -80,10 +81,15 @@ function shouldForceSmtpIpv4() {
   return cleanEnvValue(process.env.SMTP_FORCE_IPV4) !== "false";
 }
 
-function createIpv4SocketFactory(host: string, port: number, connectionTimeout: number): SMTPTransport.Options["getSocket"] {
+function createIpv4SocketFactory(
+  host: string,
+  port: number,
+  secure: boolean,
+  connectionTimeout: number,
+): SMTPTransport.Options["getSocket"] {
   return (_options, callback) => {
     let settled = false;
-    const done = (error: Error | null, socketOptions?: { connection: net.Socket }) => {
+    const done = (error: Error | null, socketOptions?: { connection: net.Socket | tls.TLSSocket; secured?: boolean }) => {
       if (settled) return;
       settled = true;
       callback(error, socketOptions);
@@ -101,9 +107,12 @@ function createIpv4SocketFactory(host: string, port: number, connectionTimeout: 
         return;
       }
 
-      const socket = net.connect({ host: address, port, family: 4, timeout: connectionTimeout }, () => {
+      const connectOptions = { host: address, port, family: 4, timeout: connectionTimeout, servername: host };
+      const socket = secure ? tls.connect(connectOptions) : net.connect(connectOptions);
+
+      socket.once("connect", () => {
         socket.setTimeout(0);
-        done(null, { connection: socket });
+        done(null, { connection: socket, secured: secure });
       });
 
       socket.once("error", done);
@@ -136,7 +145,7 @@ function getTransporter() {
       connectionTimeout,
       greetingTimeout: 8000,
       socketTimeout: 12000,
-      getSocket: !secure && shouldForceSmtpIpv4() ? createIpv4SocketFactory(host, port, connectionTimeout) : undefined,
+      getSocket: shouldForceSmtpIpv4() ? createIpv4SocketFactory(host, port, secure, connectionTimeout) : undefined,
       auth: {
         user,
         pass,
