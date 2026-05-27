@@ -1,5 +1,6 @@
 const CLOUDINARY_BASE_URL = "https://res.cloudinary.com/dmzwaaf1h";
 const COMPRESSED_BOTTLE_VERSION = "draco-17919844";
+const HOME_FILM_VERSION = "smooth-film-20260527";
 
 function cloudinaryVideo(path: string) {
   return `${CLOUDINARY_BASE_URL}/video/upload/${path}`;
@@ -15,6 +16,11 @@ export const localMediaFallbacks = {
     webBottle: "/models/saptambu-bottle-web.glb",
   },
   videos: {
+    homeFilm: {
+      desktop: `/videos/home-sequence/saptambu-home-desktop.mp4?v=${HOME_FILM_VERSION}`,
+      mobile: `/videos/home-sequence/saptambu-home-mobile.mp4?v=${HOME_FILM_VERSION}`,
+      poster: `/videos/home-sequence/saptambu-home-poster.jpg?v=${HOME_FILM_VERSION}`,
+    },
     homeSequence: {
       scene01: "/videos/home-sequence/scene-01.mp4",
       scene02: "/videos/home-sequence/scene-02.mp4",
@@ -38,6 +44,11 @@ export const cloudinaryAssets = {
     webBottleFallback: cloudinaryRaw("saptambu/models/saptambu-bottle-web.glb"),
   },
   videos: {
+    homeFilm: {
+      desktop: cloudinaryVideo("saptambu/videos/home-sequence/saptambu-home-desktop.mp4"),
+      mobile: cloudinaryVideo("saptambu/videos/home-sequence/saptambu-home-mobile.mp4"),
+      poster: `${CLOUDINARY_BASE_URL}/image/upload/saptambu/videos/home-sequence/saptambu-home-poster.jpg`,
+    },
     homeSequence: {
       scene01: cloudinaryVideo("saptambu/videos/home-sequence/scene-01.mp4"),
       scene02: cloudinaryVideo("saptambu/videos/home-sequence/scene-02.mp4"),
@@ -61,6 +72,7 @@ export const deliveryAssets = {
     webBottleFallback: localMediaFallbacks.models.webBottle,
   },
   videos: {
+    homeFilm: localMediaFallbacks.videos.homeFilm,
     homeSequence: cloudinaryAssets.videos.homeSequence,
     journey: cloudinaryAssets.videos.journey,
   },

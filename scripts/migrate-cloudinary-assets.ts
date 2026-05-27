@@ -49,6 +49,16 @@ const staticAssets: StaticAsset[] = [
     resourceType: "video",
   },
   {
+    localPath: "public/videos/home-sequence/saptambu-home-desktop.mp4",
+    publicId: "saptambu/videos/home-sequence/saptambu-home-desktop",
+    resourceType: "video",
+  },
+  {
+    localPath: "public/videos/home-sequence/saptambu-home-mobile.mp4",
+    publicId: "saptambu/videos/home-sequence/saptambu-home-mobile",
+    resourceType: "video",
+  },
+  {
     localPath: "public/videos/saptambu-firefly-journey-desktop.mp4",
     publicId: "saptambu/videos/saptambu-firefly-journey-desktop",
     resourceType: "video",

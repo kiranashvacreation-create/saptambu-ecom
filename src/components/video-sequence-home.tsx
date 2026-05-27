@@ -33,16 +33,15 @@ type LightProfile = {
 };
 
 type StepBeat = {
-  anchor: number;
   body: string;
   bottleSide: BottleSide;
   eyebrow: string;
+  filmTime: number;
   grade: Grade;
   layout: ChapterLayout;
   light: LightProfile;
   phase: string;
   title: string;
-  videoIndex: number;
 };
 
 type BottlePose = {
@@ -56,28 +55,8 @@ type BottlePose = {
   z: number;
 };
 
-const videos = [
-  {
-    label: "Origin, Ganga, Yamuna",
-    fallbackSrc: localMediaFallbacks.videos.homeSequence.scene02,
-    src: deliveryAssets.videos.homeSequence.scene02,
-  },
-  {
-    label: "Saraswati, Narmada, Godavari",
-    fallbackSrc: localMediaFallbacks.videos.homeSequence.scene01,
-    src: deliveryAssets.videos.homeSequence.scene01,
-  },
-  {
-    label: "Krishna, Kaveri, Confluence",
-    fallbackSrc: localMediaFallbacks.videos.homeSequence.scene04,
-    src: deliveryAssets.videos.homeSequence.scene04,
-  },
-  {
-    label: "Journey, Essence",
-    fallbackSrc: localMediaFallbacks.videos.homeSequence.scene03,
-    src: deliveryAssets.videos.homeSequence.scene03,
-  },
-];
+const homeFilm = deliveryAssets.videos.homeFilm;
+const homeFilmFallback = localMediaFallbacks.videos.homeFilm;
 
 const grades = {
   amberGreen: {
@@ -182,145 +161,135 @@ const lights = {
 
 const stepTimeline: StepBeat[] = [
   {
-    anchor: 0,
     body: "Where Himalayan ice becomes the first sacred current.",
     bottleSide: "right",
     eyebrow: "01",
+    filmTime: 0.1,
     grade: grades.coolOrigin,
     layout: "left",
     light: lights.coolOrigin,
     phase: "Origin",
     title: "The Origin",
-    videoIndex: 0,
   },
   {
-    anchor: 2.66,
     body: "Golden ghats, prayer, and a river held as mother.",
     bottleSide: "left",
     eyebrow: "02",
+    filmTime: 2.8,
     grade: grades.templeGold,
     layout: "right",
     light: lights.templeGold,
     phase: "First Four Rivers",
     title: "Ganga",
-    videoIndex: 0,
   },
   {
-    anchor: 5.33,
     body: "Mist, reflection, and heritage moving softly at dawn.",
     bottleSide: "left",
     eyebrow: "03",
+    filmTime: 5.6,
     grade: grades.templeGold,
     layout: "right",
     light: lights.templeGold,
     phase: "First Four Rivers",
     title: "Yamuna",
-    videoIndex: 0,
   },
   {
-    anchor: 0,
     body: "The hidden river, remembered beneath stone and water.",
     bottleSide: "left",
     eyebrow: "04",
+    filmTime: 7.3,
     grade: grades.underwater,
     layout: "right",
     light: lights.underwater,
     phase: "First Four Rivers",
     title: "Saraswati",
-    videoIndex: 1,
   },
   {
-    anchor: 2.66,
     body: "A canyon river shaped by rock, fall, and sunset mist.",
     bottleSide: "left",
     eyebrow: "05",
+    filmTime: 9.9,
     grade: grades.templeGold,
     layout: "right",
     light: lights.templeGold,
     phase: "First Four Rivers",
     title: "Narmada",
-    videoIndex: 1,
   },
   {
-    anchor: 5.33,
     body: "A life-giving southern current across fertile sacred land.",
     bottleSide: "right",
     eyebrow: "06",
+    filmTime: 12.6,
     grade: grades.templeGold,
     layout: "left",
     light: lights.templeGold,
     phase: "Next Three Rivers",
     title: "Godavari",
-    videoIndex: 1,
   },
   {
-    anchor: 0,
     body: "Temple light and wide water under a burning sky.",
     bottleSide: "right",
     eyebrow: "07",
+    filmTime: 14.5,
     grade: grades.amberGreen,
     layout: "left",
     light: lights.amberGreen,
     phase: "Next Three Rivers",
     title: "Krishna",
-    videoIndex: 2,
   },
   {
-    anchor: 2.66,
     body: "Islands, bridges, and green river devotion in quiet flow.",
     bottleSide: "right",
     eyebrow: "08",
+    filmTime: 17.2,
     grade: grades.amberGreen,
     layout: "left",
     light: lights.amberGreen,
     phase: "Next Three Rivers",
     title: "Kaveri",
-    videoIndex: 2,
   },
   {
-    anchor: 7.9,
     body: "Many currents becoming one vast sacred meeting.",
     bottleSide: "left",
     eyebrow: "09",
+    filmTime: 20.4,
     grade: grades.deepGold,
     layout: "right",
     light: lights.deepGold,
     phase: "Confluence And Essence",
     title: "The Confluence",
-    videoIndex: 2,
   },
   {
-    anchor: 0,
     body: "A river crossing mountains, plains, memory, and time.",
     bottleSide: "right",
     eyebrow: "10",
+    filmTime: 22.8,
     grade: grades.deepGold,
     layout: "left",
     light: lights.deepGold,
     phase: "Confluence And Essence",
     title: "The Journey",
-    videoIndex: 3,
   },
   {
-    anchor: 7.9,
     body: "The offering distilled into Saptambu.",
     bottleSide: "center",
     eyebrow: "11",
+    filmTime: 28.75,
     grade: grades.deepGold,
     layout: "split",
     light: lights.deepGold,
     phase: "Confluence And Essence",
     title: "The Essence",
-    videoIndex: 3,
   },
 ];
 
 const VIDEO_START_TIME = 0.001;
 const SEEK_EPSILON_SECONDS = 1 / 30;
+const HOME_FILM_DURATION_SECONDS = 29.29;
+const HOME_FILM_END_TIME = 29.2;
 const LABEL_FRONT_Y = 0;
 const MIN_SAME_VIDEO_TRANSITION_SECONDS = 0.85;
 const MAX_SAME_VIDEO_TRANSITION_SECONDS = 1.45;
-const CROSS_TRANSITION_SECONDS = 0.95;
 const BOTTLE_MODEL_SRC = deliveryAssets.models.originalBottle;
 const BOTTLE_MODEL_FALLBACK_SRC = localMediaFallbacks.models.originalBottle;
 const BOTTLE_LOAD_TIMEOUT_MS = 60_000;
@@ -342,16 +311,20 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-function getSafeVideoTime(video: HTMLVideoElement, anchor: number) {
-  if (!video.duration || Number.isNaN(video.duration)) return Math.max(anchor, VIDEO_START_TIME);
+function getSafeVideoTime(video: HTMLVideoElement, filmTime: number) {
+  if (!video.duration || Number.isNaN(video.duration)) return Math.max(filmTime, VIDEO_START_TIME);
   const end = Math.max(video.duration - 0.045, VIDEO_START_TIME);
-  return clamp(anchor <= 0 ? VIDEO_START_TIME : anchor, VIDEO_START_TIME, end);
+  return clamp(filmTime <= 0 ? VIDEO_START_TIME : filmTime, VIDEO_START_TIME, end);
 }
 
-function setVideoTime(video: HTMLVideoElement, anchor: number, force = false) {
-  const nextTime = getSafeVideoTime(video, anchor);
+function setVideoTime(video: HTMLVideoElement, filmTime: number, force = false) {
+  const nextTime = getSafeVideoTime(video, filmTime);
   if (force || Math.abs(video.currentTime - nextTime) >= SEEK_EPSILON_SECONDS) {
-    video.currentTime = nextTime;
+    try {
+      video.currentTime = nextTime;
+    } catch {
+      // Some mobile browsers reject seeks until metadata is ready; the next scroll tick retries.
+    }
   }
 }
 
@@ -426,7 +399,6 @@ export function VideoSequenceHome() {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const textRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const transitionVeilRef = useRef<HTMLDivElement | null>(null);
   const progressRef = useRef<HTMLDivElement | null>(null);
   const bottleCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const cursorDotRef = useRef<HTMLDivElement | null>(null);
@@ -435,10 +407,9 @@ export function VideoSequenceHome() {
   useEffect(() => {
     const root = rootRef.current;
     const track = trackRef.current ?? root?.querySelector<HTMLDivElement>("[data-video-track]");
-    const transitionVeil = transitionVeilRef.current ?? root?.querySelector<HTMLDivElement>("[data-transition-veil]");
     const progressBar = progressRef.current ?? root?.querySelector<HTMLDivElement>("[data-sequence-progress]");
     const canvas = bottleCanvasRef.current ?? root?.querySelector<HTMLCanvasElement>("[data-bottle-canvas]");
-    if (!root || !track || !transitionVeil || !progressBar || !canvas) return;
+    if (!root || !track || !progressBar || !canvas) return;
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const nav = navigator as Navigator & {
@@ -479,8 +450,6 @@ export function VideoSequenceHome() {
     let bottleTween: gsap.core.Tween | null = null;
     let scrollFrame = 0;
     let transitionTimer = 0;
-    let wipeCoverTimer = 0;
-    let wipeResetTimer = 0;
     const videoTweens = new Map<HTMLVideoElement, gsap.core.Tween>();
     const readyVideoIndexes = new Set<number>();
     const videoReadyPromises = new Map<number, Promise<void>>();
@@ -530,7 +499,6 @@ export function VideoSequenceHome() {
     const { dracoLoader, loader: gltfLoader } = createGltfLoader();
 
     const getTextNodes = () => Array.from(root.querySelectorAll<HTMLDivElement>("[data-step-panel]"));
-    const getVideoPanels = () => Array.from(root.querySelectorAll<HTMLDivElement>("[data-video-panel]"));
 
     const setMaterialOpacity = (material: THREE.Material, opacity: number) => {
       if (!materialBase.has(material)) {
@@ -556,7 +524,7 @@ export function VideoSequenceHome() {
     const updateRootDataset = (stepIndex: number) => {
       root.dataset.activeStep = String(stepIndex + 1);
       root.dataset.activeTitle = stepTimeline[stepIndex].title;
-      root.dataset.activeVideo = String(stepTimeline[stepIndex].videoIndex + 1);
+      root.dataset.activeVideo = "1";
     };
 
     const updateProgressValue = (value: number, duration = prefersReducedMotion ? 0 : 0.55) => {
@@ -750,27 +718,41 @@ export function VideoSequenceHome() {
       });
     };
 
-    const showVideoPanel = (videoIndex: number) => {
-      getVideoPanels().forEach((panel, index) => {
-        panel.style.opacity = index === videoIndex ? "1" : "0";
-        panel.style.zIndex = index === videoIndex ? "2" : "0";
+    const findStepForFilmTime = (filmTime: number) => {
+      let closestIndex = 0;
+      let closestDistance = Number.POSITIVE_INFINITY;
+      stepTimeline.forEach((step, index) => {
+        const distance = Math.abs(step.filmTime - filmTime);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = index;
+        }
       });
+      return closestIndex;
     };
 
-    const scrubVideoTo = (video: HTMLVideoElement, anchor: number, duration: number, delay = 0) => {
+    const scrubHomeFilmTo = (filmTime: number, duration = 0.18, immediate = false) => {
+      const video = videoNodes[0];
+      if (!video) return;
       videoTweens.get(video)?.kill();
+      const nextTime = getSafeVideoTime(video, clamp(filmTime, VIDEO_START_TIME, HOME_FILM_END_TIME));
+
+      if (prefersReducedMotion || immediate || Math.abs(video.currentTime - nextTime) > 0.16) {
+        setVideoTime(video, nextTime, true);
+        return;
+      }
+
       const state = { time: video.currentTime || VIDEO_START_TIME };
       const tween = gsap.to(state, {
-        delay,
-        duration: prefersReducedMotion ? 0 : duration,
-        ease: "none",
+        duration,
+        ease: "power2.out",
         onComplete: () => {
-          setVideoTime(video, anchor, true);
+          setVideoTime(video, nextTime, true);
           videoTweens.delete(video);
         },
-        onUpdate: () => setVideoTime(video, state.time, true),
+        onUpdate: () => setVideoTime(video, state.time),
         overwrite: true,
-        time: getSafeVideoTime(video, anchor),
+        time: nextTime,
       });
       videoTweens.set(video, tween);
     };
@@ -783,15 +765,7 @@ export function VideoSequenceHome() {
       applyMood(step);
       animateBottlePose(step, immediate ? 0 : 0.75, immediate);
       showStepText(stepIndex, immediate);
-      showVideoPanel(step.videoIndex);
-      videoNodes.forEach((video, index) => {
-        if (index === step.videoIndex) {
-          setVideoTime(video, step.anchor, true);
-        } else if (readyVideoIndexes.has(index)) {
-          const firstStepForVideo = stepTimeline.find((item) => item.videoIndex === index);
-          setVideoTime(video, firstStepForVideo?.anchor ?? 0, true);
-        }
-      });
+      scrubHomeFilmTo(step.filmTime, 0, true);
     };
 
     const moveCursor = (event: MouseEvent) => {
@@ -816,35 +790,6 @@ export function VideoSequenceHome() {
       cursorFrame = window.requestAnimationFrame(tickCursor);
     };
 
-    const animateDissolve = (onCovered?: () => void | Promise<void>) => {
-      window.clearTimeout(wipeCoverTimer);
-      window.clearTimeout(wipeResetTimer);
-      transitionVeil.style.transition = "none";
-      transitionVeil.style.backdropFilter = "blur(0px)";
-      transitionVeil.style.opacity = "0";
-      void transitionVeil.offsetWidth;
-      transitionVeil.style.transition =
-        "opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), backdrop-filter 220ms cubic-bezier(0.22, 1, 0.36, 1)";
-      transitionVeil.style.backdropFilter = "blur(2px)";
-      transitionVeil.style.opacity = "0.42";
-
-      wipeCoverTimer = window.setTimeout(() => {
-        if (disposed) return;
-        Promise.resolve(onCovered?.()).finally(() => {
-          if (disposed) return;
-          transitionVeil.style.transition =
-            "opacity 620ms cubic-bezier(0.22, 1, 0.36, 1), backdrop-filter 620ms cubic-bezier(0.22, 1, 0.36, 1)";
-          transitionVeil.style.backdropFilter = "blur(0px)";
-          transitionVeil.style.opacity = "0";
-          wipeResetTimer = window.setTimeout(() => {
-            if (disposed) return;
-            transitionVeil.style.transition = "none";
-            transitionVeil.style.backdropFilter = "blur(0px)";
-          }, 660);
-        });
-      }, 120);
-    };
-
     const goToStep = (nextStepIndex: number) => {
       if (disposed || !assetsReady) return;
       const clampedIndex = clamp(nextStepIndex, 0, stepTimeline.length - 1);
@@ -853,81 +798,20 @@ export function VideoSequenceHome() {
       const previousStepIndex = activeStep;
       const previousStep = stepTimeline[previousStepIndex];
       const nextStep = stepTimeline[clampedIndex];
-      const sameVideo = previousStep.videoIndex === nextStep.videoIndex;
-      const currentVideo = videoNodes[previousStep.videoIndex];
-      const incomingVideo = videoNodes[nextStep.videoIndex];
-      const videoTravel = Math.abs(nextStep.anchor - previousStep.anchor);
-      const duration = sameVideo
-        ? clamp(videoTravel / 1.08, MIN_SAME_VIDEO_TRANSITION_SECONDS, MAX_SAME_VIDEO_TRANSITION_SECONDS)
-        : CROSS_TRANSITION_SECONDS;
+      const filmTravel = Math.abs(nextStep.filmTime - previousStep.filmTime);
+      const duration = clamp(filmTravel / 4.8, MIN_SAME_VIDEO_TRANSITION_SECONDS, MAX_SAME_VIDEO_TRANSITION_SECONDS);
 
       activeStep = clampedIndex;
       updateRootDataset(clampedIndex);
       applyMood(nextStep);
       animateBottlePose(nextStep, duration + 0.32);
       window.clearTimeout(transitionTimer);
-      window.clearTimeout(wipeCoverTimer);
-      window.clearTimeout(wipeResetTimer);
 
       const textNodes = getTextNodes();
-      const videoPanels = getVideoPanels();
       gsap.killTweensOf(textNodes);
-
-      if (sameVideo && currentVideo) {
-        showStepText(clampedIndex, false, previousStepIndex);
-        scrubVideoTo(currentVideo, nextStep.anchor, duration);
-      } else {
-        const previousPanel = videoPanels[previousStep.videoIndex];
-        const nextPanel = videoPanels[nextStep.videoIndex];
-
-        if (previousPanel) {
-          gsap.killTweensOf(previousPanel);
-          gsap.set(previousPanel, { opacity: 1, zIndex: 2 });
-        }
-        if (nextPanel) {
-          gsap.killTweensOf(nextPanel);
-          gsap.set(nextPanel, { opacity: 0, zIndex: 3 });
-        }
-
-        animateDissolve(async () => {
-          await prepareVideo(nextStep.videoIndex);
-          if (incomingVideo) setVideoTime(incomingVideo, nextStep.anchor, true);
-          if (nextPanel) {
-            gsap.to(nextPanel, {
-              duration: prefersReducedMotion ? 0 : 0.78,
-              ease: "sine.inOut",
-              opacity: 1,
-              overwrite: true,
-              zIndex: 3,
-            });
-          }
-          if (previousPanel) {
-            gsap.to(previousPanel, {
-              delay: prefersReducedMotion ? 0 : 0.04,
-              duration: prefersReducedMotion ? 0 : 0.84,
-              ease: "sine.inOut",
-              opacity: 0,
-              overwrite: true,
-              zIndex: 2,
-            });
-          }
-          showStepText(clampedIndex, false, previousStepIndex);
-        });
-        if (prefersReducedMotion) {
-          if (nextPanel) gsap.set(nextPanel, { opacity: 1, zIndex: 2 });
-          if (previousPanel) gsap.set(previousPanel, { opacity: 0, zIndex: 0 });
-          showStepText(clampedIndex, true, previousStepIndex);
-        }
-        gsap.to(track, {
-          duration: 0,
-          overwrite: true,
-          x: 0,
-        });
-      }
+      showStepText(clampedIndex, false, previousStepIndex);
 
       transitionTimer = window.setTimeout(() => {
-        if (incomingVideo) setVideoTime(incomingVideo, nextStep.anchor, true);
-        showVideoPanel(nextStep.videoIndex);
         showStepText(clampedIndex, true);
       }, duration * 1000 + 140);
     };
@@ -938,9 +822,11 @@ export function VideoSequenceHome() {
 
       const scrollableDistance = Math.max(root.offsetHeight - window.innerHeight, 1);
       const scrollProgress = clamp(-root.getBoundingClientRect().top / scrollableDistance, 0, 1);
-      const nextStepIndex = Math.round(scrollProgress * (stepTimeline.length - 1));
+      const filmTime = clamp(scrollProgress * HOME_FILM_DURATION_SECONDS, VIDEO_START_TIME, HOME_FILM_END_TIME);
+      const nextStepIndex = findStepForFilmTime(filmTime);
 
       updateProgressValue(scrollProgress, 0.12);
+      scrubHomeFilmTo(filmTime, isLowEndDevice ? 0.22 : 0.16);
       goToStep(nextStepIndex);
     };
 
@@ -975,14 +861,6 @@ export function VideoSequenceHome() {
           onProgress(clamp(bufferedEnd / video.duration, 0.06, 0.96));
         };
 
-        const switchToFallbackSource = () => {
-          const fallbackSrc = videos[index]?.fallbackSrc;
-          if (!fallbackSrc || video.currentSrc.endsWith(fallbackSrc) || video.src.endsWith(fallbackSrc)) return false;
-          video.src = fallbackSrc;
-          video.load();
-          return true;
-        };
-
         const cleanup = () => {
           video.removeEventListener("loadeddata", ready);
           video.removeEventListener("canplay", ready);
@@ -998,14 +876,12 @@ export function VideoSequenceHome() {
           video.pause();
           video.muted = true;
           video.playsInline = true;
-          const firstStepForVideo = stepTimeline.find((step) => step.videoIndex === index);
-          setVideoTime(video, firstStepForVideo?.anchor ?? 0, true);
+          setVideoTime(video, stepTimeline[0].filmTime, true);
           onProgress?.(1);
           resolve();
         };
 
         const onError = () => {
-          if (switchToFallbackSource()) return;
           ready();
         };
 
@@ -1257,14 +1133,12 @@ export function VideoSequenceHome() {
       bottleTween?.kill();
       dracoLoader.dispose();
       renderer?.dispose();
-      gsap.killTweensOf([progressBar, track, transitionVeil, canvas, ...getTextNodes()]);
+      gsap.killTweensOf([progressBar, track, canvas, ...getTextNodes()]);
       videoTweens.forEach((tween) => tween.kill());
       window.cancelAnimationFrame(cursorFrame);
       window.cancelAnimationFrame(renderFrame);
       window.cancelAnimationFrame(scrollFrame);
       window.clearTimeout(transitionTimer);
-      window.clearTimeout(wipeCoverTimer);
-      window.clearTimeout(wipeResetTimer);
       if (enableCustomCursor) window.removeEventListener("mousemove", moveCursor);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("scroll", requestScrollUpdate);
@@ -1281,27 +1155,25 @@ export function VideoSequenceHome() {
     >
       <div className="sticky top-0 h-[100svh] overflow-hidden bg-black">
         <div ref={trackRef} className="absolute inset-0 h-full w-full" data-video-track>
-          {videos.map((video, index) => (
-            <div
-              className="absolute inset-0 h-full w-full overflow-hidden bg-black"
-              data-video-panel
-              key={video.src}
-              style={{ opacity: index === 0 ? 1 : 0, zIndex: index === 0 ? 2 : 0 }}
+          <div className="absolute inset-0 h-full w-full overflow-hidden bg-black" data-video-panel style={{ opacity: 1, zIndex: 2 }}>
+            <video
+              ref={(node) => {
+                videoRefs.current[0] = node;
+              }}
+              aria-label="Saptambu sacred waters film"
+              className="h-full w-full object-cover transition-[filter] duration-700 ease-out [filter:brightness(var(--video-brightness))_contrast(var(--video-contrast))_saturate(var(--video-saturation))_hue-rotate(var(--video-hue))]"
+              disablePictureInPicture
+              muted
+              playsInline
+              poster={homeFilm.poster}
+              preload="auto"
             >
-              <video
-                ref={(node) => {
-                  videoRefs.current[index] = node;
-                }}
-                aria-label={`Saptambu sacred waters scene - ${video.label}`}
-                className="h-full w-full object-cover transition-[filter] duration-700 ease-out [filter:brightness(var(--video-brightness))_contrast(var(--video-contrast))_saturate(var(--video-saturation))_hue-rotate(var(--video-hue))]"
-                disablePictureInPicture
-                muted
-                playsInline
-                preload={index === 0 ? "auto" : "none"}
-                src={video.src}
-              />
-            </div>
-          ))}
+              <source media="(max-width: 767px)" src={homeFilm.mobile} type="video/mp4" />
+              <source media="(min-width: 768px)" src={homeFilm.desktop} type="video/mp4" />
+              <source media="(max-width: 767px)" src={homeFilmFallback.mobile} type="video/mp4" />
+              <source src={homeFilmFallback.desktop} type="video/mp4" />
+            </video>
+          </div>
         </div>
 
         <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(ellipse_82%_76%_at_54%_48%,transparent_18%,rgba(5,6,9,0.68)_100%)]" />
@@ -1334,7 +1206,7 @@ export function VideoSequenceHome() {
             className={getTextPanelClass(chapter.layout)}
             data-step-panel
             data-step-title={chapter.title}
-            data-step-video={chapter.videoIndex + 1}
+            data-step-video="1"
             key={chapter.eyebrow}
             ref={(node) => {
               textRefs.current[index] = node;
@@ -1384,16 +1256,6 @@ export function VideoSequenceHome() {
             Explore Products
           </span>
         </Link>
-
-        <div
-          ref={transitionVeilRef}
-          data-transition-veil
-          className="pointer-events-none absolute inset-0 z-[49] opacity-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 72% 70% at 50% 50%, rgba(31,97,122,0.22), rgba(5,6,9,0.62) 58%, rgba(5,6,9,0.78)), radial-gradient(circle at 42% 48%, rgba(240,215,156,0.16), transparent 36%)",
-          }}
-        />
 
         <div className="pointer-events-none absolute inset-x-0 top-0 z-[55] h-[5vh] bg-[#050609]" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[55] h-[5vh] bg-[#050609]" />
