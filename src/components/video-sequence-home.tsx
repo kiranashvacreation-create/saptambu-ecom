@@ -312,10 +312,12 @@ const stepTimeline: StepBeat[] = [
 const VIDEO_START_TIME = 0.001;
 const SEEK_EPSILON_SECONDS = 1 / 30;
 const LABEL_FRONT_Y = 0;
-const MIN_SAME_VIDEO_TRANSITION_SECONDS = 1.7;
-const MAX_SAME_VIDEO_TRANSITION_SECONDS = 3.8;
-const CROSS_TRANSITION_SECONDS = 2.08;
+const MIN_SAME_VIDEO_TRANSITION_SECONDS = 0.85;
+const MAX_SAME_VIDEO_TRANSITION_SECONDS = 1.45;
+const CROSS_TRANSITION_SECONDS = 0.95;
 const BOTTLE_MODEL_SRC = "/models/saptambu-bottle.glb";
+const SCROLL_DISTANCE_PER_STEP_SVH = 220;
+const SCROLL_STAGE_HEIGHT_SVH = 100 + (stepTimeline.length - 1) * SCROLL_DISTANCE_PER_STEP_SVH;
 
 const rootStyle = {
   "--left-gradient-opacity": "1",
@@ -346,17 +348,18 @@ function setVideoTime(video: HTMLVideoElement, anchor: number, force = false) {
 }
 
 function getTextPanelClass(layout: ChapterLayout) {
-  const base = "pointer-events-none absolute z-40 min-w-0 overflow-hidden break-words will-change-transform";
+  const base =
+    "pointer-events-none absolute z-40 min-w-0 overflow-hidden break-words will-change-[transform,opacity,filter]";
 
   if (layout === "right") {
-    return `${base} right-[clamp(1.4rem,7vw,7rem)] top-1/2 w-[min(33rem,calc(100vw-2.8rem))] text-right md:w-[min(33rem,38vw)]`;
+    return `${base} right-[clamp(1rem,4.6vw,7rem)] top-1/2 w-[min(17rem,44vw)] text-right sm:right-[clamp(1.4rem,7vw,7rem)] sm:w-[min(33rem,calc(100vw-2.8rem))] md:w-[min(33rem,38vw)]`;
   }
 
   if (layout === "split") {
-    return `${base} inset-x-[clamp(1.4rem,6vw,6rem)] top-1/2 grid gap-8 text-left md:grid-cols-[minmax(0,0.84fr)_minmax(0,0.68fr)] md:items-center`;
+    return `${base} inset-x-[clamp(1rem,5vw,6rem)] top-[24vh] grid gap-3 text-center sm:gap-6 md:top-1/2 md:grid-cols-[minmax(0,0.84fr)_minmax(0,0.68fr)] md:items-center md:text-left`;
   }
 
-  return `${base} left-[clamp(1.4rem,7vw,7rem)] top-1/2 w-[min(33rem,calc(100vw-2.8rem))] text-left md:w-[min(33rem,38vw)]`;
+  return `${base} left-[clamp(1rem,4.6vw,7rem)] top-1/2 w-[min(17rem,44vw)] text-left sm:left-[clamp(1.4rem,7vw,7rem)] sm:w-[min(33rem,calc(100vw-2.8rem))] md:w-[min(33rem,38vw)]`;
 }
 
 function getBottlePoseForStep(step: StepBeat): BottlePose {
@@ -413,7 +416,6 @@ export function VideoSequenceHome() {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const textRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const transitionBarRef = useRef<HTMLDivElement | null>(null);
   const transitionVeilRef = useRef<HTMLDivElement | null>(null);
   const progressRef = useRef<HTMLDivElement | null>(null);
   const bottleCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -423,11 +425,10 @@ export function VideoSequenceHome() {
   useEffect(() => {
     const root = rootRef.current;
     const track = trackRef.current ?? root?.querySelector<HTMLDivElement>("[data-video-track]");
-    const transitionBar = transitionBarRef.current ?? root?.querySelector<HTMLDivElement>("[data-transition-bar]");
     const transitionVeil = transitionVeilRef.current ?? root?.querySelector<HTMLDivElement>("[data-transition-veil]");
     const progressBar = progressRef.current ?? root?.querySelector<HTMLDivElement>("[data-sequence-progress]");
     const canvas = bottleCanvasRef.current ?? root?.querySelector<HTMLCanvasElement>("[data-bottle-canvas]");
-    if (!root || !track || !transitionBar || !transitionVeil || !progressBar || !canvas) return;
+    if (!root || !track || !transitionVeil || !progressBar || !canvas) return;
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const nav = navigator as Navigator & {
@@ -460,13 +461,13 @@ export function VideoSequenceHome() {
     let essenceBackgroundGroup: THREE.Group | null = null;
     let essenceBackgroundOpacity = 0;
     let fillLight: THREE.PointLight | null = null;
-    let inputLockUntil = 0;
-    let isTransitioning = false;
     let keyLight: THREE.DirectionalLight | null = null;
     let renderFrame = 0;
     let lastRenderAt = 0;
     let renderer: THREE.WebGLRenderer | null = null;
     let rimLight: THREE.DirectionalLight | null = null;
+    let bottleTween: gsap.core.Tween | null = null;
+    let scrollFrame = 0;
     let transitionTimer = 0;
     let wipeCoverTimer = 0;
     let wipeResetTimer = 0;
@@ -547,13 +548,17 @@ export function VideoSequenceHome() {
       root.dataset.activeVideo = String(stepTimeline[stepIndex].videoIndex + 1);
     };
 
-    const updateProgress = (stepIndex: number, duration = prefersReducedMotion ? 0 : 0.55) => {
+    const updateProgressValue = (value: number, duration = prefersReducedMotion ? 0 : 0.55) => {
       gsap.to(progressBar, {
         duration,
         ease: "power2.out",
         overwrite: true,
-        scaleX: progressForStep(stepIndex),
+        scaleX: clamp(value, 0, 1),
       });
+    };
+
+    const updateProgress = (stepIndex: number, duration = prefersReducedMotion ? 0 : 0.55) => {
+      updateProgressValue(progressForStep(stepIndex), duration);
     };
 
     const applyMood = (step: StepBeat) => {
@@ -599,40 +604,138 @@ export function VideoSequenceHome() {
       }
     };
 
-    const setTargetPose = (step: StepBeat) => {
-      Object.assign(targetPose, getBottlePoseForStep(step));
-    };
-
-    const commitBottlePose = (step: StepBeat) => {
-      Object.assign(targetPose, getBottlePoseForStep(step));
-      Object.assign(bottlePose, targetPose);
+    const applyBottlePose = () => {
       if (bottleGroup) {
         bottleGroup.visible = true;
         bottleGroup.position.set(bottlePose.x, bottlePose.y, bottlePose.z);
-        bottleGroup.rotation.set(bottlePose.rotationX, bottlePose.rotationY, bottlePose.rotationZ);
+        bottleGroup.rotation.set(
+          bottlePose.rotationX - smoothMouse.y * 0.025,
+          bottlePose.rotationY + smoothMouse.x * 0.035,
+          bottlePose.rotationZ,
+        );
         bottleGroup.scale.setScalar(bottlePose.scale);
-        setBottleOpacity(bottlePose.opacity);
+        setBottleOpacity(clamp(bottlePose.opacity, 0, 1));
       }
-      canvas.style.opacity = String(bottlePose.opacity);
+      canvas.style.opacity = String(clamp(bottlePose.opacity, 0, 1));
     };
 
-    const showStepText = (stepIndex: number, immediate = false) => {
+    const animateBottlePose = (step: StepBeat, duration = 0.9, immediate = false) => {
+      Object.assign(targetPose, getBottlePoseForStep(step));
+      bottleTween?.kill();
+      bottleTween = null;
+
+      if (prefersReducedMotion || immediate) {
+        Object.assign(bottlePose, targetPose);
+        applyBottlePose();
+        return;
+      }
+
+      bottleTween = gsap.to(bottlePose, {
+        duration,
+        ease: "sine.inOut",
+        opacity: targetPose.opacity,
+        overwrite: true,
+        rotationX: targetPose.rotationX,
+        rotationY: targetPose.rotationY,
+        rotationZ: targetPose.rotationZ,
+        scale: targetPose.scale,
+        x: targetPose.x,
+        y: targetPose.y,
+        z: targetPose.z,
+      });
+    };
+
+    const getTextOffset = (step: StepBeat) => {
+      if (step.layout === "split") return 0;
+      return step.layout === "right" ? 16 : -16;
+    };
+
+    const hideTextPanel = (element: HTMLDivElement, step: StepBeat) => {
+      gsap.set(element, {
+        clipPath: "inset(12% 0% 12% 0%)",
+        filter: "blur(10px)",
+        opacity: 0,
+        scale: 0.992,
+        x: getTextOffset(step),
+        yPercent: -50,
+      });
+      element.style.setProperty("display", "none", "important");
+    };
+
+    const showStepText = (stepIndex: number, immediate = false, previousStepIndex = activeStep) => {
       getTextNodes().forEach((element, index) => {
         const isActive = index === stepIndex;
+        const wasActive = index === previousStepIndex;
         const step = stepTimeline[index];
-        const isRight = step.layout === "right";
-        const x = isActive ? 0 : isRight ? 12 : -12;
-        const y = "-50%";
-        const scale = isActive ? 1 : 0.992;
+        const offset = getTextOffset(step);
+
+        gsap.killTweensOf(element);
+        element.style.transition = "none";
+
+        if (prefersReducedMotion || immediate) {
+          if (isActive) {
+            element.style.removeProperty("display");
+            gsap.set(element, {
+              clipPath: "inset(0% 0% 0% 0%)",
+              filter: "blur(0px)",
+              opacity: 1,
+              scale: 1,
+              x: 0,
+              yPercent: -50,
+            });
+          } else {
+            hideTextPanel(element, step);
+          }
+          return;
+        }
 
         if (isActive) {
           element.style.removeProperty("display");
-        } else {
-          element.style.setProperty("display", "none", "important");
+          gsap.fromTo(
+            element,
+            {
+              clipPath: "inset(9% 0% 9% 0%)",
+              filter: "blur(12px)",
+              opacity: wasActive ? 1 : 0,
+              scale: wasActive ? 1 : 0.986,
+              x: wasActive ? 0 : offset * -0.72,
+              yPercent: wasActive ? -50 : -47,
+            },
+            {
+              clipPath: "inset(0% 0% 0% 0%)",
+              duration: 0.58,
+              ease: "sine.out",
+              filter: "blur(0px)",
+              opacity: 1,
+              overwrite: true,
+              scale: 1,
+              x: 0,
+              yPercent: -50,
+            },
+          );
+          return;
         }
-        element.style.setProperty("opacity", isActive ? "1" : "0", "important");
-        element.style.transition = immediate ? "none" : "opacity 520ms cubic-bezier(0.22,1,0.36,1), transform 520ms cubic-bezier(0.22,1,0.36,1)";
-        element.style.setProperty("transform", `translate(${x}px, ${y}) scale(${scale})`, "important");
+
+        if (!wasActive && element.style.display === "none") {
+          hideTextPanel(element, step);
+          return;
+        }
+
+        element.style.removeProperty("display");
+        gsap.to(element, {
+          clipPath: "inset(11% 0% 11% 0%)",
+          duration: 0.42,
+          ease: "sine.inOut",
+          filter: "blur(12px)",
+          onComplete: () => {
+            if (index !== stepIndex) hideTextPanel(element, step);
+          },
+          opacity: 0,
+          overwrite: true,
+          scale: 0.992,
+          x: offset,
+          yPercent: -53,
+        });
       });
     };
 
@@ -667,8 +770,7 @@ export function VideoSequenceHome() {
       updateRootDataset(stepIndex);
       updateProgress(stepIndex, immediate ? 0 : 0.55);
       applyMood(step);
-      setTargetPose(step);
-      if (immediate) commitBottlePose(step);
+      animateBottlePose(step, immediate ? 0 : 0.75, immediate);
       showStepText(stepIndex, immediate);
       showVideoPanel(step.videoIndex);
       videoNodes.forEach((video, index) => {
@@ -703,47 +805,39 @@ export function VideoSequenceHome() {
       cursorFrame = window.requestAnimationFrame(tickCursor);
     };
 
-    const animateSeparator = (onCovered?: () => void | Promise<void>) => {
+    const animateDissolve = (onCovered?: () => void | Promise<void>) => {
       window.clearTimeout(wipeCoverTimer);
       window.clearTimeout(wipeResetTimer);
-      transitionBar.style.transition = "none";
       transitionVeil.style.transition = "none";
-      transitionBar.style.width = "1px";
-      transitionBar.style.opacity = "0.2";
-      transitionBar.style.boxShadow = "0 0 28px rgba(210,168,92,0.28)";
+      transitionVeil.style.backdropFilter = "blur(0px)";
       transitionVeil.style.opacity = "0";
       void transitionVeil.offsetWidth;
-      transitionBar.style.transition = "opacity 980ms ease, box-shadow 980ms ease";
-      transitionVeil.style.transition = "opacity 520ms cubic-bezier(0.22, 1, 0.36, 1)";
-      transitionBar.style.opacity = "0.48";
-      transitionBar.style.boxShadow = "0 0 40px rgba(210,168,92,0.36)";
-      transitionVeil.style.opacity = "0.24";
+      transitionVeil.style.transition =
+        "opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), backdrop-filter 220ms cubic-bezier(0.22, 1, 0.36, 1)";
+      transitionVeil.style.backdropFilter = "blur(2px)";
+      transitionVeil.style.opacity = "0.42";
 
       wipeCoverTimer = window.setTimeout(() => {
         if (disposed) return;
         Promise.resolve(onCovered?.()).finally(() => {
           if (disposed) return;
-          transitionVeil.style.transition = "opacity 1200ms cubic-bezier(0.22, 1, 0.36, 1)";
-          transitionBar.style.transition = "opacity 1150ms ease, box-shadow 1150ms ease";
+          transitionVeil.style.transition =
+            "opacity 620ms cubic-bezier(0.22, 1, 0.36, 1), backdrop-filter 620ms cubic-bezier(0.22, 1, 0.36, 1)";
+          transitionVeil.style.backdropFilter = "blur(0px)";
           transitionVeil.style.opacity = "0";
-          transitionBar.style.opacity = "0.28";
-          transitionBar.style.boxShadow = "0 0 28px rgba(210,168,92,0.28)";
           wipeResetTimer = window.setTimeout(() => {
             if (disposed) return;
             transitionVeil.style.transition = "none";
-            transitionBar.style.transition = "none";
-          }, 1220);
+            transitionVeil.style.backdropFilter = "blur(0px)";
+          }, 660);
         });
-      }, 260);
+      }, 120);
     };
 
     const goToStep = (nextStepIndex: number) => {
-      if (disposed || isTransitioning || !assetsReady) return;
+      if (disposed || !assetsReady) return;
       const clampedIndex = clamp(nextStepIndex, 0, stepTimeline.length - 1);
       if (clampedIndex === activeStep) return;
-
-      const now = Date.now();
-      if (now < inputLockUntil) return;
 
       const previousStepIndex = activeStep;
       const previousStep = stepTimeline[previousStepIndex];
@@ -756,12 +850,10 @@ export function VideoSequenceHome() {
         ? clamp(videoTravel / 1.08, MIN_SAME_VIDEO_TRANSITION_SECONDS, MAX_SAME_VIDEO_TRANSITION_SECONDS)
         : CROSS_TRANSITION_SECONDS;
 
-      isTransitioning = true;
-      inputLockUntil = now + duration * 1000 + 360;
+      activeStep = clampedIndex;
       updateRootDataset(clampedIndex);
-      updateProgress(clampedIndex, duration * 0.6);
       applyMood(nextStep);
-      setTargetPose(nextStep);
+      animateBottlePose(nextStep, duration + 0.32);
       window.clearTimeout(transitionTimer);
       window.clearTimeout(wipeCoverTimer);
       window.clearTimeout(wipeResetTimer);
@@ -771,7 +863,7 @@ export function VideoSequenceHome() {
       gsap.killTweensOf(textNodes);
 
       if (sameVideo && currentVideo) {
-        showStepText(clampedIndex, false);
+        showStepText(clampedIndex, false, previousStepIndex);
         scrubVideoTo(currentVideo, nextStep.anchor, duration);
       } else {
         const previousPanel = videoPanels[previousStep.videoIndex];
@@ -786,12 +878,12 @@ export function VideoSequenceHome() {
           gsap.set(nextPanel, { opacity: 0, zIndex: 3 });
         }
 
-        animateSeparator(async () => {
+        animateDissolve(async () => {
           await prepareVideo(nextStep.videoIndex);
           if (incomingVideo) setVideoTime(incomingVideo, nextStep.anchor, true);
           if (nextPanel) {
             gsap.to(nextPanel, {
-              duration: prefersReducedMotion ? 0 : 1.55,
+              duration: prefersReducedMotion ? 0 : 0.78,
               ease: "sine.inOut",
               opacity: 1,
               overwrite: true,
@@ -800,20 +892,20 @@ export function VideoSequenceHome() {
           }
           if (previousPanel) {
             gsap.to(previousPanel, {
-              delay: prefersReducedMotion ? 0 : 0.08,
-              duration: prefersReducedMotion ? 0 : 1.65,
+              delay: prefersReducedMotion ? 0 : 0.04,
+              duration: prefersReducedMotion ? 0 : 0.84,
               ease: "sine.inOut",
               opacity: 0,
               overwrite: true,
               zIndex: 2,
             });
           }
-          showStepText(clampedIndex, false);
+          showStepText(clampedIndex, false, previousStepIndex);
         });
         if (prefersReducedMotion) {
           if (nextPanel) gsap.set(nextPanel, { opacity: 1, zIndex: 2 });
           if (previousPanel) gsap.set(previousPanel, { opacity: 0, zIndex: 0 });
-          showStepText(clampedIndex, true);
+          showStepText(clampedIndex, true, previousStepIndex);
         }
         gsap.to(track, {
           duration: 0,
@@ -823,50 +915,27 @@ export function VideoSequenceHome() {
       }
 
       transitionTimer = window.setTimeout(() => {
-        activeStep = clampedIndex;
         if (incomingVideo) setVideoTime(incomingVideo, nextStep.anchor, true);
         showVideoPanel(nextStep.videoIndex);
-        commitBottlePose(nextStep);
-        showStepText(clampedIndex, false);
-        isTransitioning = false;
+        showStepText(clampedIndex, true);
       }, duration * 1000 + 140);
     };
 
-    const advance = (direction: 1 | -1) => {
-      goToStep(activeStep + direction);
+    const updateFromScroll = () => {
+      scrollFrame = 0;
+      if (disposed || !assetsReady) return;
+
+      const scrollableDistance = Math.max(root.offsetHeight - window.innerHeight, 1);
+      const scrollProgress = clamp(-root.getBoundingClientRect().top / scrollableDistance, 0, 1);
+      const nextStepIndex = Math.round(scrollProgress * (stepTimeline.length - 1));
+
+      updateProgressValue(scrollProgress, 0.12);
+      goToStep(nextStepIndex);
     };
 
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      if (!assetsReady || disposed) return;
-      if (Math.abs(event.deltaY) < 12) return;
-      advance(event.deltaY > 0 ? 1 : -1);
-    };
-
-    let touchStartY = 0;
-    const onTouchStart = (event: TouchEvent) => {
-      touchStartY = event.touches[0]?.clientY ?? 0;
-    };
-
-    const onTouchEnd = (event: TouchEvent) => {
-      if (!assetsReady || disposed) return;
-      const endY = event.changedTouches[0]?.clientY ?? touchStartY;
-      const delta = touchStartY - endY;
-      if (Math.abs(delta) < 34) return;
-      advance(delta > 0 ? 1 : -1);
-    };
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!assetsReady || disposed) return;
-      const forwardKeys = ["ArrowDown", "PageDown", " "];
-      const backwardKeys = ["ArrowUp", "PageUp"];
-      if (forwardKeys.includes(event.key)) {
-        event.preventDefault();
-        advance(1);
-      } else if (backwardKeys.includes(event.key)) {
-        event.preventDefault();
-        advance(-1);
-      }
+    const requestScrollUpdate = () => {
+      if (scrollFrame) return;
+      scrollFrame = window.requestAnimationFrame(updateFromScroll);
     };
 
     const onResize = () => {
@@ -875,7 +944,8 @@ export function VideoSequenceHome() {
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(renderPixelRatio());
-      setTargetPose(stepTimeline[activeStep]);
+      animateBottlePose(stepTimeline[activeStep], 0.35);
+      requestScrollUpdate();
     };
 
     const prepareVideo = (index: number, onProgress?: (progress: number) => void) => {
@@ -1037,7 +1107,7 @@ export function VideoSequenceHome() {
             bottleGroup.add(model);
             bottleGroup.visible = true;
             scene.add(bottleGroup);
-            commitBottlePose(stepTimeline[activeStep]);
+            animateBottlePose(stepTimeline[activeStep], 0, true);
             onProgress?.(1);
             resolve();
           },
@@ -1073,22 +1143,7 @@ export function VideoSequenceHome() {
       smoothMouse.x += (mouse.x - smoothMouse.x) * 0.045;
       smoothMouse.y += (mouse.y - smoothMouse.y) * 0.045;
 
-      bottlePose.opacity += (targetPose.opacity - bottlePose.opacity) * 0.08;
-      bottlePose.rotationX += (targetPose.rotationX - smoothMouse.y * 0.025 - bottlePose.rotationX) * 0.06;
-      bottlePose.rotationY += (targetPose.rotationY + smoothMouse.x * 0.035 - bottlePose.rotationY) * 0.055;
-      bottlePose.rotationZ += (targetPose.rotationZ - bottlePose.rotationZ) * 0.06;
-      bottlePose.scale += (targetPose.scale - bottlePose.scale) * 0.07;
-      bottlePose.x += (targetPose.x - bottlePose.x) * 0.06;
-      bottlePose.y += (targetPose.y - bottlePose.y) * 0.06;
-      bottlePose.z += (targetPose.z - bottlePose.z) * 0.06;
-
-      if (bottleGroup) {
-        bottleGroup.position.set(bottlePose.x, bottlePose.y, bottlePose.z);
-        bottleGroup.rotation.set(bottlePose.rotationX, bottlePose.rotationY, bottlePose.rotationZ);
-        bottleGroup.scale.setScalar(bottlePose.scale);
-        setBottleOpacity(clamp(bottlePose.opacity, 0, 1));
-      }
-      canvas.style.opacity = String(clamp(bottlePose.opacity, 0, 1));
+      applyBottlePose();
 
       const essenceTargetOpacity = activeStep === stepTimeline.length - 1 ? 1 : 0;
       essenceBackgroundOpacity += (essenceTargetOpacity - essenceBackgroundOpacity) * 0.055;
@@ -1114,6 +1169,7 @@ export function VideoSequenceHome() {
       window.setTimeout(() => {
         assetsReady = true;
         setStaticStep(0, true);
+        requestScrollUpdate();
         setIsLoading(false);
       }, 220);
     };
@@ -1145,29 +1201,25 @@ export function VideoSequenceHome() {
       window.addEventListener("mousemove", moveCursor);
       cursorFrame = window.requestAnimationFrame(tickCursor);
     }
-    window.addEventListener("wheel", onWheel, { passive: false });
-    window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchend", onTouchEnd, { passive: true });
-    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("scroll", requestScrollUpdate, { passive: true });
 
     renderFrame = window.requestAnimationFrame(renderBottleLayer);
 
     return () => {
       disposed = true;
+      bottleTween?.kill();
       renderer?.dispose();
-      gsap.killTweensOf([progressBar, track, transitionBar, transitionVeil, canvas, ...getTextNodes()]);
+      gsap.killTweensOf([progressBar, track, transitionVeil, canvas, ...getTextNodes()]);
       videoTweens.forEach((tween) => tween.kill());
       window.cancelAnimationFrame(cursorFrame);
       window.cancelAnimationFrame(renderFrame);
+      window.cancelAnimationFrame(scrollFrame);
       window.clearTimeout(transitionTimer);
       window.clearTimeout(wipeCoverTimer);
       window.clearTimeout(wipeResetTimer);
       if (enableCustomCursor) window.removeEventListener("mousemove", moveCursor);
       window.removeEventListener("resize", onResize);
-      window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchend", onTouchEnd);
-      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("scroll", requestScrollUpdate);
       videoNodes.forEach((video) => video.pause());
     };
   }, []);
@@ -1175,11 +1227,11 @@ export function VideoSequenceHome() {
   return (
     <section
       ref={rootRef}
-      className="relative h-[100svh] cursor-none overflow-hidden bg-[#050609] text-[#f4ead7]"
+      className="relative cursor-none bg-[#050609] text-[#f4ead7]"
       data-active-step="1"
-      style={rootStyle}
+      style={{ ...rootStyle, minHeight: `${SCROLL_STAGE_HEIGHT_SVH}svh` }}
     >
-      <div className="relative h-[100svh] overflow-hidden bg-black">
+      <div className="sticky top-0 h-[100svh] overflow-hidden bg-black">
         <div ref={trackRef} className="absolute inset-0 h-full w-full" data-video-track>
           {videos.map((video, index) => (
             <div
@@ -1212,7 +1264,7 @@ export function VideoSequenceHome() {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[24vh] bg-gradient-to-t from-[#050609]/88 via-[#050609]/28 to-transparent" />
         <div className="pointer-events-none absolute inset-0 z-10 opacity-[0.022] mix-blend-overlay [background-image:url('data:image/svg+xml,%3Csvg_xmlns=%22http://www.w3.org/2000/svg%22_width=%22300%22_height=%22300%22%3E%3Cfilter_id=%22n%22%3E%3CfeTurbulence_type=%22fractalNoise%22_baseFrequency=%220.85%22_numOctaves=%224%22_stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect_width=%22300%22_height=%22300%22_filter=%22url(%23n)%22/%3E%3C/svg%3E')] [background-size:200px_200px]" />
 
-        <canvas ref={bottleCanvasRef} className="pointer-events-none fixed inset-0 z-20 h-full w-full opacity-0" data-bottle-canvas />
+        <canvas ref={bottleCanvasRef} className="pointer-events-none absolute inset-0 z-20 h-full w-full opacity-0" data-bottle-canvas />
 
         <Link
           aria-label="Skip to Products"
@@ -1249,25 +1301,25 @@ export function VideoSequenceHome() {
               <>
                 <div>
                   <div className="max-w-full whitespace-normal break-words font-mono text-[0.55rem] uppercase leading-relaxed tracking-[0.18em] text-[#d2a85c]/78 sm:text-[0.62rem] sm:tracking-[0.46em]">
-                    {chapter.eyebrow} — {chapter.phase}
+                    {chapter.phase}
                   </div>
-                  <h2 className="mt-4 max-w-[27rem] text-balance break-words font-serif text-[clamp(2rem,15vw,4.8rem)] font-light leading-[0.96] tracking-[0.012em] text-[#f4ead7] sm:text-[clamp(2.05rem,5vw,4.8rem)] sm:leading-[0.92]">
+                  <h2 className="mx-auto mt-3 max-w-[18rem] text-balance break-words font-serif text-[clamp(1.65rem,9vw,3rem)] font-light leading-[1.02] tracking-[0.012em] text-[#f4ead7] sm:mt-4 sm:max-w-[27rem] sm:text-[clamp(2.05rem,5vw,4.8rem)] sm:leading-[0.92] md:mx-0">
                     {chapter.title}
                   </h2>
                 </div>
-                <p className="max-w-[24rem] self-center justify-self-start break-words text-left font-serif text-[clamp(0.96rem,4.8vw,1.28rem)] italic leading-relaxed tracking-[0.025em] text-[#f4ead7]/70 sm:tracking-[0.075em] md:justify-self-end md:text-right">
+                <p className="mx-auto max-w-[18rem] self-center justify-self-center break-words text-center font-serif text-[clamp(0.82rem,3.8vw,1.05rem)] italic leading-relaxed tracking-[0.015em] text-[#f4ead7]/70 sm:max-w-[24rem] sm:text-[clamp(0.96rem,4.8vw,1.28rem)] sm:tracking-[0.075em] md:mx-0 md:justify-self-end md:text-right">
                   {chapter.body}
                 </p>
               </>
             ) : (
               <>
                 <div className="max-w-full whitespace-normal break-words font-mono text-[0.55rem] uppercase leading-relaxed tracking-[0.18em] text-[#d2a85c]/78 sm:text-[0.62rem] sm:tracking-[0.46em]">
-                  {chapter.eyebrow} — {chapter.phase}
+                  {chapter.phase}
                 </div>
-                <h2 className="mt-4 max-w-[31rem] text-balance break-words font-serif text-[clamp(2rem,15vw,4.95rem)] font-light leading-[0.96] tracking-[0.012em] text-[#f4ead7] sm:text-[clamp(2.05rem,5.1vw,4.95rem)] sm:leading-[0.92]">
+                <h2 className="mt-3 max-w-[16rem] text-balance break-words font-serif text-[clamp(1.55rem,8vw,2.7rem)] font-light leading-[1.04] tracking-[0.012em] text-[#f4ead7] sm:mt-4 sm:max-w-[31rem] sm:text-[clamp(2.05rem,5.1vw,4.95rem)] sm:leading-[0.92]">
                   {chapter.title}
                 </h2>
-                <p className="mt-5 max-w-[26rem] break-words font-serif text-[clamp(0.96rem,4.8vw,1.24rem)] italic leading-relaxed tracking-[0.025em] text-[#f4ead7]/68 sm:text-[clamp(0.98rem,1.42vw,1.24rem)] sm:tracking-[0.075em]">
+                <p className="mt-3 max-w-[16rem] break-words font-serif text-[clamp(0.82rem,3.8vw,1.04rem)] italic leading-relaxed tracking-[0.015em] text-[#f4ead7]/68 sm:mt-5 sm:max-w-[26rem] sm:text-[clamp(0.98rem,1.42vw,1.24rem)] sm:tracking-[0.075em]">
                   {chapter.body}
                 </p>
               </>
@@ -1291,18 +1343,12 @@ export function VideoSequenceHome() {
           className="pointer-events-none absolute inset-0 z-[49] opacity-0"
           style={{
             background:
-              "radial-gradient(ellipse 72% 70% at 50% 50%, rgba(20,14,7,0.78), rgba(5,6,9,0.96) 68%, rgba(5,6,9,1)), linear-gradient(90deg, rgba(210,168,92,0.1), transparent 22%, transparent 78%, rgba(210,168,92,0.1))",
+              "radial-gradient(ellipse 72% 70% at 50% 50%, rgba(31,97,122,0.22), rgba(5,6,9,0.62) 58%, rgba(5,6,9,0.78)), radial-gradient(circle at 42% 48%, rgba(240,215,156,0.16), transparent 36%)",
           }}
-        />
-        <div
-          ref={transitionBarRef}
-          data-transition-bar
-          className="pointer-events-none absolute left-1/2 top-0 z-[51] h-full w-px origin-center -translate-x-1/2 scale-x-100 bg-[#d2a85c]/78 opacity-40 shadow-[0_0_42px_rgba(210,168,92,0.42)]"
         />
 
         <div className="pointer-events-none absolute inset-x-0 top-0 z-[55] h-[5vh] bg-[#050609]" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[55] h-[5vh] bg-[#050609]" />
-        <div className="pointer-events-none absolute inset-3 z-[56] border border-[#f4ead7]/34" />
         <div className="pointer-events-none absolute inset-x-3 bottom-[calc(5vh+0.8rem)] z-[57] h-px bg-[#d2a85c]/18">
           <div
             ref={progressRef}
@@ -1354,22 +1400,6 @@ export function VideoSequenceHome() {
           }
         }
 
-        :global(.saptambhu-wipe-active) {
-          animation: saptambhu-soft-wipe 1.28s cubic-bezier(0.22, 1, 0.36, 1) both;
-          background: linear-gradient(
-            90deg,
-            rgba(210, 168, 92, 0.52),
-            rgba(5, 6, 9, 0.98) 9%,
-            rgba(5, 6, 9, 0.98) 91%,
-            rgba(210, 168, 92, 0.52)
-          ) !important;
-          transform: translateX(-50%) !important;
-        }
-
-        :global(.saptambhu-veil-active) {
-          animation: saptambhu-soft-veil 1.28s cubic-bezier(0.22, 1, 0.36, 1) both;
-        }
-
         :global(section[data-active-step="11"] .essence-product-cta) {
           opacity: 1 !important;
           pointer-events: auto !important;
@@ -1412,26 +1442,6 @@ export function VideoSequenceHome() {
           opacity: 1;
         }
 
-        @keyframes saptambhu-soft-wipe {
-          0% {
-            opacity: 0.98;
-            width: 1px;
-          }
-          34%,
-          46% {
-            opacity: 0.98;
-            width: 145vw;
-          }
-          86% {
-            opacity: 0.86;
-            width: 1px;
-          }
-          100% {
-            opacity: 0.38;
-            width: 1px;
-          }
-        }
-
         @keyframes saptambu-cta-sheen {
           0%,
           48% {
@@ -1454,22 +1464,6 @@ export function VideoSequenceHome() {
             box-shadow:
               0 0 38px rgba(240, 215, 156, 0.48),
               0 18px 54px rgba(0, 0, 0, 0.42);
-          }
-        }
-
-        @keyframes saptambhu-soft-veil {
-          0% {
-            opacity: 0;
-          }
-          34%,
-          46% {
-            opacity: 0.72;
-          }
-          86% {
-            opacity: 0.12;
-          }
-          100% {
-            opacity: 0;
           }
         }
 
