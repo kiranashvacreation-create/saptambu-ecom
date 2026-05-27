@@ -315,7 +315,7 @@ const LABEL_FRONT_Y = 0;
 const MIN_SAME_VIDEO_TRANSITION_SECONDS = 0.85;
 const MAX_SAME_VIDEO_TRANSITION_SECONDS = 1.45;
 const CROSS_TRANSITION_SECONDS = 0.95;
-const BOTTLE_MODEL_SRC = "/models/saptambu-bottle-web.glb";
+const BOTTLE_MODEL_SRC = "/models/saptambu-bottle.glb";
 const SCROLL_DISTANCE_PER_STEP_SVH = 220;
 const SCROLL_STAGE_HEIGHT_SVH = 100 + (stepTimeline.length - 1) * SCROLL_DISTANCE_PER_STEP_SVH;
 
