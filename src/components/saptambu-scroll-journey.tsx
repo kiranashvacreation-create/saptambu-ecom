@@ -8,6 +8,7 @@ import Lenis from "lenis";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { deliveryAssets, localMediaFallbacks } from "@/lib/cloudinary-assets";
 
 type BottlePose = {
   x: number;
@@ -294,8 +295,9 @@ export function SaptambuScrollJourney() {
     scene.add(new THREE.HemisphereLight(0xfff6e8, 0x130807, 1.15));
 
     const loader = new GLTFLoader();
-    loader.load(
-      "/models/saptambu-bottle.glb",
+    const loadBottleModel = (src: string, allowFallback: boolean) => {
+      loader.load(
+        src,
       (gltf) => {
         if (disposed) {
           disposeObject(gltf.scene);
@@ -310,12 +312,19 @@ export function SaptambuScrollJourney() {
         markReady();
       },
       undefined,
-      (error) => {
+        (error) => {
         console.error("Unable to load Saptambu bottle model", error);
+          if (allowFallback) {
+            loadBottleModel(localMediaFallbacks.models.originalBottle, false);
+            return;
+          }
         modelReady = true;
         markReady();
       },
-    );
+      );
+    };
+
+    loadBottleModel(deliveryAssets.models.originalBottle, true);
 
     const onVideoFrameReady = () => {
       videoReady = true;
@@ -438,8 +447,8 @@ export function SaptambuScrollJourney() {
           playsInline
           preload="auto"
         >
-          <source media="(max-width: 767px)" src="/videos/saptambu-firefly-journey-mobile.mp4" type="video/mp4" />
-          <source src="/videos/saptambu-firefly-journey-desktop.mp4" type="video/mp4" />
+          <source media="(max-width: 767px)" src={deliveryAssets.videos.journey.fireflyMobile} type="video/mp4" />
+          <source src={deliveryAssets.videos.journey.fireflyDesktop} type="video/mp4" />
         </video>
         <div className="absolute inset-0 z-[1] bg-[radial-gradient(circle_at_73%_42%,rgba(231,176,85,0.2),transparent_32%),linear-gradient(90deg,rgba(5,4,3,0.98)_0%,rgba(8,5,4,0.91)_34%,rgba(5,4,3,0.34)_60%,rgba(5,4,3,0.5)_100%)]" />
         <div className="absolute inset-0 z-[2] bg-[linear-gradient(to_bottom,rgba(5,4,3,0.9),transparent_24%,transparent_70%,rgba(5,4,3,0.9))]" />

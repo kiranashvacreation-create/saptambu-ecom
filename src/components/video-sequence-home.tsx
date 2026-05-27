@@ -4,7 +4,8 @@ import Link from "next/link";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { deliveryAssets, localMediaFallbacks } from "@/lib/cloudinary-assets";
 
 type ChapterLayout = "left" | "right" | "split";
 type BottleSide = "left" | "right" | "center";
@@ -57,19 +58,23 @@ type BottlePose = {
 const videos = [
   {
     label: "Origin, Ganga, Yamuna",
-    src: "/videos/home-sequence/scene-02.mp4",
+    fallbackSrc: localMediaFallbacks.videos.homeSequence.scene02,
+    src: deliveryAssets.videos.homeSequence.scene02,
   },
   {
     label: "Saraswati, Narmada, Godavari",
-    src: "/videos/home-sequence/scene-01.mp4",
+    fallbackSrc: localMediaFallbacks.videos.homeSequence.scene01,
+    src: deliveryAssets.videos.homeSequence.scene01,
   },
   {
     label: "Krishna, Kaveri, Confluence",
-    src: "/videos/home-sequence/scene-04.mp4",
+    fallbackSrc: localMediaFallbacks.videos.homeSequence.scene04,
+    src: deliveryAssets.videos.homeSequence.scene04,
   },
   {
     label: "Journey, Essence",
-    src: "/videos/home-sequence/scene-03.mp4",
+    fallbackSrc: localMediaFallbacks.videos.homeSequence.scene03,
+    src: deliveryAssets.videos.homeSequence.scene03,
   },
 ];
 
@@ -315,7 +320,9 @@ const LABEL_FRONT_Y = 0;
 const MIN_SAME_VIDEO_TRANSITION_SECONDS = 0.85;
 const MAX_SAME_VIDEO_TRANSITION_SECONDS = 1.45;
 const CROSS_TRANSITION_SECONDS = 0.95;
-const BOTTLE_MODEL_SRC = "/models/saptambu-bottle.glb";
+const BOTTLE_MODEL_SRC = deliveryAssets.models.originalBottle;
+const BOTTLE_MODEL_FALLBACK_SRC = localMediaFallbacks.models.originalBottle;
+const BOTTLE_LOAD_TIMEOUT_MS = 60_000;
 const SCROLL_DISTANCE_PER_STEP_SVH = 220;
 const SCROLL_STAGE_HEIGHT_SVH = 100 + (stepTimeline.length - 1) * SCROLL_DISTANCE_PER_STEP_SVH;
 
@@ -365,7 +372,7 @@ function getTextPanelClass(layout: ChapterLayout) {
 function getBottlePoseForStep(step: StepBeat): BottlePose {
   const mobile = typeof window !== "undefined" && window.innerWidth < 768;
   const sideX = step.bottleSide === "left" ? -0.92 : step.bottleSide === "center" ? 0 : 0.92;
-  const mobileX = step.bottleSide === "left" ? -0.34 : step.bottleSide === "center" ? 0 : 0.34;
+  const mobileX = step.bottleSide === "left" ? -0.24 : step.bottleSide === "center" ? 0 : 0.24;
 
   if (step.eyebrow === "01") {
     return {
@@ -373,10 +380,10 @@ function getBottlePoseForStep(step: StepBeat): BottlePose {
       rotationX: mobile ? 0.01 : -0.01,
       rotationY: LABEL_FRONT_Y + (mobile ? 0.01 : 0.028),
       rotationZ: -0.045,
-      scale: mobile ? 0.44 : 0.62,
+      scale: mobile ? 0.52 : 0.62,
       x: mobile ? mobileX : sideX,
-      y: mobile ? -0.14 : -0.08,
-      z: mobile ? -0.84 : -0.34,
+      y: mobile ? -0.1 : -0.08,
+      z: mobile ? -0.5 : -0.34,
     };
   }
 
@@ -386,10 +393,10 @@ function getBottlePoseForStep(step: StepBeat): BottlePose {
       rotationX: mobile ? 0.01 : -0.015,
       rotationY: LABEL_FRONT_Y - 0.015,
       rotationZ: -0.08,
-      scale: mobile ? 0.58 : 0.95,
+      scale: mobile ? 0.68 : 0.95,
       x: 0,
       y: mobile ? -0.06 : -0.04,
-      z: mobile ? -0.7 : 0.08,
+      z: mobile ? -0.44 : 0.08,
     };
   }
 
@@ -398,10 +405,10 @@ function getBottlePoseForStep(step: StepBeat): BottlePose {
     rotationX: mobile ? 0.005 : -0.012,
     rotationY: LABEL_FRONT_Y + (step.bottleSide === "left" ? -0.04 : 0.04),
     rotationZ: step.bottleSide === "left" ? 0.04 : -0.05,
-    scale: mobile ? 0.43 : step.eyebrow === "09" ? 0.72 : 0.68,
+    scale: mobile ? 0.5 : step.eyebrow === "09" ? 0.72 : 0.68,
     x: mobile ? mobileX : sideX,
-    y: mobile ? -0.13 : -0.12,
-    z: mobile ? -0.78 : -0.12,
+    y: mobile ? -0.1 : -0.12,
+    z: mobile ? -0.48 : -0.12,
   };
 }
 
@@ -412,6 +419,8 @@ function progressForStep(stepIndex: number) {
 export function VideoSequenceHome() {
   const [isLoading, setIsLoading] = useState(true);
   const [loaderProgress, setLoaderProgress] = useState(0);
+  const [bottleLoadError, setBottleLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const rootRef = useRef<HTMLElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
@@ -964,10 +973,18 @@ export function VideoSequenceHome() {
           onProgress(clamp(bufferedEnd / video.duration, 0.06, 0.96));
         };
 
+        const switchToFallbackSource = () => {
+          const fallbackSrc = videos[index]?.fallbackSrc;
+          if (!fallbackSrc || video.currentSrc.endsWith(fallbackSrc) || video.src.endsWith(fallbackSrc)) return false;
+          video.src = fallbackSrc;
+          video.load();
+          return true;
+        };
+
         const cleanup = () => {
           video.removeEventListener("loadeddata", ready);
           video.removeEventListener("canplay", ready);
-          video.removeEventListener("error", ready);
+          video.removeEventListener("error", onError);
           video.removeEventListener("progress", updateProgress);
         };
 
@@ -985,6 +1002,11 @@ export function VideoSequenceHome() {
           resolve();
         };
 
+        const onError = () => {
+          if (switchToFallbackSource()) return;
+          ready();
+        };
+
         if (video.readyState >= 2 && video.duration) {
           ready();
           return;
@@ -992,7 +1014,7 @@ export function VideoSequenceHome() {
 
         video.addEventListener("loadeddata", ready, { once: true });
         video.addEventListener("canplay", ready, { once: true });
-        video.addEventListener("error", ready, { once: true });
+        video.addEventListener("error", onError);
         video.addEventListener("progress", updateProgress);
         video.load();
         window.setTimeout(ready, index === 0 ? 3200 : 5200);
@@ -1075,56 +1097,76 @@ export function VideoSequenceHome() {
 
       onProgress?.(0.04);
 
-      return new Promise<void>((resolve) => {
-        new GLTFLoader().load(
-          BOTTLE_MODEL_SRC,
-          (gltf) => {
-            if (disposed) {
-              resolve();
-              return;
-            }
-            bottleGroup = new THREE.Group();
-            const model = gltf.scene;
-            const box = new THREE.Box3().setFromObject(model);
-            const center = box.getCenter(new THREE.Vector3());
-            const size = box.getSize(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z);
+      const loadBottle = (src: string) =>
+        new Promise<GLTF>((resolve, reject) => {
+          let settled = false;
+          const timeout = window.setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            reject(new Error(`Bottle model load timed out: ${src}`));
+          }, BOTTLE_LOAD_TIMEOUT_MS);
 
-            model.position.sub(center);
-            model.scale.setScalar(2.55 / maxDim);
-            model.traverse((child) => {
-              const mesh = child as THREE.Mesh;
-              if (!mesh.isMesh) return;
-              const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-              materials.forEach((material) => {
-                if (material && "envMapIntensity" in material) {
-                  material.envMapIntensity = 1.25;
-                  material.needsUpdate = true;
-                }
-              });
-            });
+          new GLTFLoader().load(
+            src,
+            (gltf) => {
+              if (settled) return;
+              settled = true;
+              window.clearTimeout(timeout);
+              resolve(gltf);
+            },
+            (event) => {
+              if (!event.total) {
+                onProgress?.(0.18);
+                return;
+              }
+              onProgress?.(clamp(event.loaded / event.total, 0.04, 0.98));
+            },
+            (error) => {
+              if (settled) return;
+              settled = true;
+              window.clearTimeout(timeout);
+              reject(error instanceof Error ? error : new Error(String(error)));
+            },
+          );
+        });
 
-            bottleGroup.add(model);
-            bottleGroup.visible = true;
-            scene.add(bottleGroup);
-            animateBottlePose(stepTimeline[activeStep], 0, true);
-            onProgress?.(1);
-            resolve();
-          },
-          (event) => {
-            if (!event.total) {
-              onProgress?.(0.18);
-              return;
+      const mountBottle = (gltf: GLTF) => {
+        if (disposed) return;
+        bottleGroup = new THREE.Group();
+        const model = gltf.scene;
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+
+        model.position.sub(center);
+        model.scale.setScalar(2.55 / maxDim);
+        model.traverse((child) => {
+          const mesh = child as THREE.Mesh;
+          if (!mesh.isMesh) return;
+          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          materials.forEach((material) => {
+            if (material && "envMapIntensity" in material) {
+              material.envMapIntensity = 1.25;
+              material.needsUpdate = true;
             }
-            onProgress?.(clamp(event.loaded / event.total, 0.04, 0.98));
-          },
-          (error) => {
-            console.warn("Saptambu bottle failed to load; continuing with video journey.", error);
-            onProgress?.(1);
-            resolve();
-          },
-        );
-      });
+          });
+        });
+
+        bottleGroup.add(model);
+        bottleGroup.visible = true;
+        scene.add(bottleGroup);
+        animateBottlePose(stepTimeline[activeStep], 0, true);
+        onProgress?.(1);
+      };
+
+      return loadBottle(BOTTLE_MODEL_SRC)
+        .catch((error) => {
+          console.warn("Cloudinary Saptambu bottle load failed; trying local fallback.", error);
+          onProgress?.(0.12);
+          return loadBottle(BOTTLE_MODEL_FALLBACK_SRC);
+        })
+        .then(mountBottle);
     };
 
     const renderBottleLayer = () => {
@@ -1179,23 +1221,25 @@ export function VideoSequenceHome() {
     setStaticStep(0, true);
     setLoadPart("setup", 1);
 
-    void prepareVideo(0, (progress) => setLoadPart("video", progress))
+    const firstVideoReady = prepareVideo(0, (progress) => setLoadPart("video", progress))
       .catch((error) => {
         console.warn("Saptambu first video preload failed", error);
         setLoadPart("video", 1);
-      })
-      .finally(() => {
-        finishLoading();
       });
 
-    void initBottleLayer((progress) => setLoadPart("bottle", progress))
+    const bottleReady = initBottleLayer((progress) => setLoadPart("bottle", progress))
       .then(() => {
         setLoadPart("bottle", 1);
       })
       .catch((error) => {
         console.warn("Saptambu bottle load failed", error);
-        setLoadPart("bottle", 1);
+        if (!disposed) {
+          setBottleLoadError("The bottle model could not load. Check your connection and retry.");
+        }
+        throw error;
       });
+
+    void Promise.all([firstVideoReady, bottleReady]).then(finishLoading).catch(() => undefined);
 
     window.addEventListener("resize", onResize);
     if (enableCustomCursor) {
@@ -1223,7 +1267,7 @@ export function VideoSequenceHome() {
       window.removeEventListener("scroll", requestScrollUpdate);
       videoNodes.forEach((video) => video.pause());
     };
-  }, []);
+  }, [loadAttempt]);
 
   return (
     <section
@@ -1373,10 +1417,12 @@ export function VideoSequenceHome() {
 
         <div
           aria-hidden={!isLoading}
-          className="pointer-events-none absolute inset-0 z-[90] grid place-items-center bg-[#050609] transition-opacity duration-700"
+          className={`absolute inset-0 z-[90] grid place-items-center bg-[#050609] transition-opacity duration-700 ${
+            bottleLoadError ? "pointer-events-auto" : "pointer-events-none"
+          }`}
           style={{ opacity: isLoading ? 1 : 0, visibility: isLoading ? "visible" : "hidden" }}
         >
-          <div className="flex flex-col items-center gap-8">
+          <div className="flex max-w-[min(28rem,calc(100vw-2rem))] flex-col items-center gap-8 text-center">
             <div className="font-serif text-2xl font-light uppercase tracking-[0.8em] text-[#d2a85c] md:text-4xl">Saptambu</div>
             <div className="h-px w-[min(320px,58vw)] overflow-hidden bg-[#d2a85c]/18">
               <div
@@ -1384,6 +1430,23 @@ export function VideoSequenceHome() {
                 style={{ transform: `scaleX(${loaderProgress / 100})` }}
               />
             </div>
+            {bottleLoadError ? (
+              <div className="grid justify-items-center gap-4">
+                <p className="max-w-xs text-sm leading-6 text-[#f4ead7]/72">{bottleLoadError}</p>
+                <button
+                  className="focus-ring rounded-full border border-[#d2a85c]/55 bg-[#d2a85c] px-6 py-3 font-mono text-[0.68rem] font-bold uppercase tracking-[0.28em] text-[#140d05] transition hover:bg-[#f0d79c]"
+                  onClick={() => {
+                    setIsLoading(true);
+                    setLoaderProgress(0);
+                    setBottleLoadError(null);
+                    setLoadAttempt((attempt) => attempt + 1);
+                  }}
+                  type="button"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

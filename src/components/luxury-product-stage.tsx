@@ -4,13 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { deliveryAssets, localMediaFallbacks } from "@/lib/cloudinary-assets";
 
 type LuxuryProductStageProps = {
   title: string;
   eyebrow: string;
 };
 
-const BOTTLE_MODEL = "/models/saptambu-bottle-web.glb";
+const BOTTLE_MODEL = deliveryAssets.models.originalBottle;
+const BOTTLE_MODEL_FALLBACK = localMediaFallbacks.models.originalBottle;
 const MINIMUM_STAGE_LOAD_MS = 1200;
 const DROPLET_COUNT = 12;
 
@@ -196,8 +198,9 @@ export function LuxuryProductStage({ title, eyebrow }: LuxuryProductStageProps) 
     const dropletGeometry = new THREE.SphereGeometry(1, 14, 10);
 
     const loader = new GLTFLoader();
-    loader.load(
-      BOTTLE_MODEL,
+    const loadBottleModel = (src: string, allowFallback: boolean) => {
+      loader.load(
+        src,
       (gltf) => {
         const model = gltf.scene;
         const box = new THREE.Box3().setFromObject(model);
@@ -263,12 +266,20 @@ export function LuxuryProductStage({ title, eyebrow }: LuxuryProductStageProps) 
           setProgress((current) => Math.min(86, current + 6));
         }
       },
-      () => {
+        (error) => {
         if (!isMounted) return;
-        setProgress(100);
-        loadingTimer = window.setTimeout(() => setIsLoading(false), 600);
-      },
-    );
+          if (allowFallback) {
+            loadBottleModel(BOTTLE_MODEL_FALLBACK, false);
+            return;
+          }
+          console.warn("Unable to load Saptambu bottle model", error);
+          setProgress(100);
+          loadingTimer = window.setTimeout(() => setIsLoading(false), 600);
+        },
+      );
+    };
+
+    loadBottleModel(BOTTLE_MODEL, true);
 
     const pointer = { x: 0, y: 0, targetX: 0, targetY: 0 };
     const onPointerMove = (event: PointerEvent) => {
