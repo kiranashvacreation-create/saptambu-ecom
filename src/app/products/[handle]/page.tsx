@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AddToCart } from "@/components/add-to-cart";
+import { CloudinaryImage } from "@/components/cloudinary-image";
 import { currentPrice, getProduct } from "@/lib/catalog";
 import { formatMoney } from "@/lib/money";
 
@@ -19,7 +19,7 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
       <div className="grid gap-4">
         <div className="relative aspect-square overflow-hidden rounded-lg bg-[#f1ece2]">
           {product.image ? (
-            <Image src={product.image} alt={product.title} fill priority sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
+            <CloudinaryImage src={product.image} alt={product.title} fill priority sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
           ) : (
             <div className="grid h-full place-items-center text-[#7a6a5a]">No image</div>
           )}

@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Trash2 } from "lucide-react";
 import { useMemo } from "react";
+import { CloudinaryImage } from "@/components/cloudinary-image";
 import { useCart } from "@/components/cart-provider";
 import { EmptyState } from "@/components/empty-state";
 import { formatMoney } from "@/lib/money";
@@ -32,7 +32,7 @@ export function CartPageClient() {
           {items.map((item) => (
             <div key={item.productId} className="grid grid-cols-[96px_1fr] gap-4 rounded-lg border border-[var(--border)] bg-white p-4">
               <div className="relative aspect-square overflow-hidden rounded-md bg-[#f1ece2]">
-                {item.image ? <Image src={item.image} alt={item.title} fill sizes="96px" className="object-cover" /> : null}
+                {item.image ? <CloudinaryImage src={item.image} alt={item.title} fill sizes="96px" className="object-cover" /> : null}
               </div>
               <div className="grid gap-3">
                 <div className="flex items-start justify-between gap-4">

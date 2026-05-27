@@ -8,7 +8,7 @@ Fully custom Railway-hosted ecommerce app for Kiranashva Creation/Saptambu.
 - PostgreSQL on Railway
 - Prisma ORM
 - Razorpay checkout
-- Cloudinary product image uploads
+- Cloudinary product image uploads and CDN delivery transforms
 - SMTP email notifications
 
 ## Local Setup
@@ -56,4 +56,4 @@ The admin can manage products, stock, categories, coupon codes, orders, delivery
 
 Railway should provide `DATABASE_URL` from the Postgres plugin. Replace the local `DATABASE_URL` in Railway env vars, then run `npm run railway:setup` once after setting env vars to create tables and import products. Product images uploaded after launch go to Cloudinary; Railway disk is not used for durable uploads.
 
-Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`, then run `npm run migrate:cloudinary:dry-run` to preview product/media image uploads. Run `npm run migrate:cloudinary -- --force` to upload non-Cloudinary product images and media coverage images, update matching database URLs, and rewrite fallback media image URLs in code.
+Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`, then run `npm run migrate:cloudinary:dry-run` to preview product/media image uploads. Run `npm run migrate:cloudinary -- --force` to upload non-Cloudinary product images and media coverage images, update matching database URLs, and rewrite fallback media image URLs in code. Cloudinary-hosted images are served with CDN transformations for automatic format and quality selection.

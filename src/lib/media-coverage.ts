@@ -35,7 +35,7 @@ export const fallbackMediaCoverageItems: MediaCoverageItem[] = [
       <p>The story also highlights the brand's larger intent: preserving cultural emotion while presenting the product with care, clarity, and dignity.</p>
     `,
     imageUrl:
-      "https://cdn.shopify.com/s/files/1/0640/8526/2421/files/image_8fe8ce16-50b9-4c0b-a80d-8967a487f03d.png?v=1777213254",
+      "https://res.cloudinary.com/dmzwaaf1h/image/upload/v1779875396/saptambu/media/news-today-24-7-cover.png",
     imageAlt: "News Today 24/7 media logo",
     publishedLabel: "Featured press",
     href: "/media/news-today-24-7",
@@ -58,7 +58,7 @@ export const fallbackMediaCoverageItems: MediaCoverageItem[] = [
       <p>The coverage positions Kiranashva Creation as a brand working at the meeting point of tradition, packaging, and modern worship needs.</p>
     `,
     imageUrl:
-      "https://cdn.shopify.com/s/files/1/0640/8526/2421/files/image_9d6966f3-b710-4a08-80d1-ee3bbf5f8057.png?v=1777213271",
+      "https://res.cloudinary.com/dmzwaaf1h/image/upload/v1779875397/saptambu/media/forbes-news-india-cover.png",
     imageAlt: "Forbes News India media logo",
     publishedLabel: "Brand story",
     href: "/media/forbes-news-india",
@@ -80,7 +80,7 @@ export const fallbackMediaCoverageItems: MediaCoverageItem[] = [
       <blockquote>The essence of the coverage is simple: Saptambu turns a vast sacred idea into something people can respectfully keep close.</blockquote>
     `,
     imageUrl:
-      "https://cdn.shopify.com/s/files/1/0640/8526/2421/files/image_417b1d9c-1411-4986-9919-25d3e6073a40.png?v=1777213279",
+      "https://res.cloudinary.com/dmzwaaf1h/image/upload/v1779875398/saptambu/media/times-news-express-cover.png",
     imageAlt: "Times News Express media logo",
     publishedLabel: "Founder vision",
     href: "/media/times-news-express",

@@ -2,7 +2,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { v2 as cloudinary } from "cloudinary";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { PrismaClient } from "../src/generated/prisma/client";
+import { Prisma, PrismaClient } from "../src/generated/prisma/client";
 import { fallbackMediaCoverageItems } from "../src/lib/media-coverage";
 
 type UploadPlanItem = {
@@ -100,6 +100,14 @@ function updateFallbackMediaUrls(results: UploadResult[]) {
     source = source.replaceAll(result.currentUrl, result.newUrl);
   }
   writeFileSync(fallbackMediaPath, source);
+}
+
+async function runDbUpdates(prisma: PrismaClient, updates: Prisma.PrismaPromise<unknown>[]) {
+  const batchSize = 25;
+
+  for (let index = 0; index < updates.length; index += batchSize) {
+    await prisma.$transaction(updates.slice(index, index + batchSize), { timeout: 30_000 });
+  }
 }
 
 async function main() {
@@ -225,7 +233,7 @@ async function main() {
     }
 
     if (dbUpdates.length) {
-      await prisma.$transaction(dbUpdates);
+      await runDbUpdates(prisma, dbUpdates);
     }
 
     updateFallbackMediaUrls(results);

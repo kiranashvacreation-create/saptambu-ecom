@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import { CloudinaryImage } from "@/components/cloudinary-image";
 import { currentPrice, listRecentProducts } from "@/lib/catalog";
 import { fallbackMediaCoverageItems, getFallbackMediaCoverageItem } from "@/lib/media-coverage";
 import { formatMoney } from "@/lib/money";
@@ -82,7 +82,7 @@ export default async function MediaArticlePage({ params }: { params: Promise<{ s
             <div className="overflow-hidden rounded-[2rem] border border-[#ead8b8] bg-white/78 p-4 shadow-[0_30px_90px_rgba(57,34,18,0.1)] backdrop-blur-xl">
               {article.coverImageUrl ? (
                 <div className="relative aspect-[16/9] overflow-hidden rounded-[1.45rem] bg-[#f1ece2]">
-                  <Image
+                  <CloudinaryImage
                     src={article.coverImageUrl}
                     alt={article.coverImageAlt || article.title}
                     fill
@@ -148,7 +148,7 @@ export default async function MediaArticlePage({ params }: { params: Promise<{ s
                     <Link key={product.id} href={`/products/${product.slug}`} className="group grid grid-cols-[76px_1fr] gap-3 rounded-2xl border border-white/10 bg-white/8 p-3 hover:-translate-y-0.5 hover:bg-white/12">
                       <div className="relative aspect-square overflow-hidden rounded-xl bg-[#2d2219]">
                         {product.image ? (
-                          <Image src={product.image} alt={product.title} fill sizes="76px" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                          <CloudinaryImage src={product.image} alt={product.title} fill sizes="76px" className="object-cover transition-transform duration-500 group-hover:scale-105" />
                         ) : (
                           <div className="grid h-full place-items-center text-[0.65rem] text-[#d8c8af]">No image</div>
                         )}

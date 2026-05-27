@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { CloudinaryImage } from "@/components/cloudinary-image";
 import { ProductSummary, currentPrice } from "@/lib/catalog";
 import { formatMoney } from "@/lib/money";
 
@@ -15,7 +15,7 @@ export function ProductCard({ product }: { product: ProductSummary }) {
       <div className="relative aspect-square overflow-hidden bg-[#f1ece2]">
         <div className="absolute inset-3 z-10 border border-white/55 opacity-0 transition-opacity group-hover:opacity-100" />
         {product.image ? (
-          <Image
+          <CloudinaryImage
             src={product.image}
             alt={product.title}
             fill

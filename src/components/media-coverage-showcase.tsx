@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ArrowUpRight, Mail, Newspaper, Sparkles } from "lucide-react";
 import Link from "next/link";
 import type { MediaCoverageItem } from "@/lib/media-coverage";
+import { getCloudinaryImageUrl } from "@/lib/cloudinary-url";
 import { site } from "@/lib/site";
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -22,6 +23,13 @@ const stagger = {
 };
 
 function MediaLogo({ item, index }: { item: MediaCoverageItem; index: number }) {
+  const blurImageUrl = item.imageUrl
+    ? getCloudinaryImageUrl(item.imageUrl, { crop: "fill", gravity: "auto", quality: "auto", width: 900 })
+    : null;
+  const logoImageUrl = item.imageUrl
+    ? getCloudinaryImageUrl(item.imageUrl, { crop: "limit", quality: "auto", width: 700 })
+    : null;
+
   return (
     <div className="relative grid aspect-[1.08] min-h-56 place-items-center overflow-hidden rounded-[1.25rem] border border-[#ead8b8]/70 bg-[#fff7e7]/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] sm:min-h-64">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_22%,rgba(255,241,196,0.95),transparent_34%),linear-gradient(135deg,rgba(154,47,34,0.12),rgba(28,109,98,0.12))]" />
@@ -34,10 +42,10 @@ function MediaLogo({ item, index }: { item: MediaCoverageItem; index: number }) 
       {item.imageUrl ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={item.imageUrl} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-12 blur-2xl" />
+          <img src={blurImageUrl || item.imageUrl} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-12 blur-2xl" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={item.imageUrl}
+            src={logoImageUrl || item.imageUrl}
             alt={item.imageAlt}
             className="relative z-10 h-[68%] max-h-[25rem] w-auto max-w-[86%] rounded-xl object-contain drop-shadow-[0_18px_24px_rgba(35,24,15,0.24)]"
           />
