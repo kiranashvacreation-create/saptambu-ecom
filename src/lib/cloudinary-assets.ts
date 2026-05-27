@@ -1,4 +1,5 @@
 const CLOUDINARY_BASE_URL = "https://res.cloudinary.com/dmzwaaf1h";
+const COMPRESSED_BOTTLE_VERSION = "draco-17919844";
 
 function cloudinaryVideo(path: string) {
   return `${CLOUDINARY_BASE_URL}/video/upload/${path}`;
@@ -10,7 +11,7 @@ function cloudinaryRaw(path: string) {
 
 export const localMediaFallbacks = {
   models: {
-    originalBottle: "/models/saptambu-bottle.glb",
+    originalBottle: `/models/saptambu-bottle.glb?v=${COMPRESSED_BOTTLE_VERSION}`,
     webBottle: "/models/saptambu-bottle-web.glb",
   },
   videos: {

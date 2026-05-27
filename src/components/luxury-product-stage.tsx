@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { deliveryAssets, localMediaFallbacks } from "@/lib/cloudinary-assets";
+import { createGltfLoader } from "@/lib/gltf-loader";
 
 type LuxuryProductStageProps = {
   title: string;
@@ -197,7 +197,7 @@ export function LuxuryProductStage({ title, eyebrow }: LuxuryProductStageProps) 
     });
     const dropletGeometry = new THREE.SphereGeometry(1, 14, 10);
 
-    const loader = new GLTFLoader();
+    const { dracoLoader, loader } = createGltfLoader();
     const loadBottleModel = (src: string, allowFallback: boolean) => {
       loader.load(
         src,
@@ -327,6 +327,7 @@ export function LuxuryProductStage({ title, eyebrow }: LuxuryProductStageProps) 
       window.removeEventListener("pointermove", onPointerMove);
       observer.disconnect();
       disposeObject(scene);
+      dracoLoader.dispose();
       glassSheenMaterial.dispose();
       dropletMaterial.dispose();
       dropletGeometry.dispose();

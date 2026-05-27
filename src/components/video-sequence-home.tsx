@@ -4,8 +4,9 @@ import Link from "next/link";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import * as THREE from "three";
-import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
+import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { deliveryAssets, localMediaFallbacks } from "@/lib/cloudinary-assets";
+import { createGltfLoader } from "@/lib/gltf-loader";
 
 type ChapterLayout = "left" | "right" | "split";
 type BottleSide = "left" | "right" | "center";
@@ -526,6 +527,7 @@ export function VideoSequenceHome() {
     };
     const materialBase = new WeakMap<THREE.Material, { opacity: number; transparent: boolean }>();
     const essenceMaterials: THREE.Material[] = [];
+    const { dracoLoader, loader: gltfLoader } = createGltfLoader();
 
     const getTextNodes = () => Array.from(root.querySelectorAll<HTMLDivElement>("[data-step-panel]"));
     const getVideoPanels = () => Array.from(root.querySelectorAll<HTMLDivElement>("[data-video-panel]"));
@@ -1106,7 +1108,7 @@ export function VideoSequenceHome() {
             reject(new Error(`Bottle model load timed out: ${src}`));
           }, BOTTLE_LOAD_TIMEOUT_MS);
 
-          new GLTFLoader().load(
+          gltfLoader.load(
             src,
             (gltf) => {
               if (settled) return;
@@ -1253,6 +1255,7 @@ export function VideoSequenceHome() {
     return () => {
       disposed = true;
       bottleTween?.kill();
+      dracoLoader.dispose();
       renderer?.dispose();
       gsap.killTweensOf([progressBar, track, transitionVeil, canvas, ...getTextNodes()]);
       videoTweens.forEach((tween) => tween.kill());

@@ -7,8 +7,8 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { deliveryAssets, localMediaFallbacks } from "@/lib/cloudinary-assets";
+import { createGltfLoader } from "@/lib/gltf-loader";
 
 type BottlePose = {
   x: number;
@@ -294,7 +294,7 @@ export function SaptambuScrollJourney() {
     scene.add(amberLight);
     scene.add(new THREE.HemisphereLight(0xfff6e8, 0x130807, 1.15));
 
-    const loader = new GLTFLoader();
+    const { dracoLoader, loader } = createGltfLoader();
     const loadBottleModel = (src: string, allowFallback: boolean) => {
       loader.load(
         src,
@@ -430,6 +430,7 @@ export function SaptambuScrollJourney() {
       if (lenisTick) gsap.ticker.remove(lenisTick);
       lenis?.destroy();
       disposeObject(scene);
+      dracoLoader.dispose();
       environment.dispose();
       pmrem.dispose();
       renderer.dispose();
