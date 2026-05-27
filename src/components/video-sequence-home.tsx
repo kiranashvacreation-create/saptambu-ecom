@@ -315,7 +315,7 @@ const LABEL_FRONT_Y = 0;
 const MIN_SAME_VIDEO_TRANSITION_SECONDS = 0.85;
 const MAX_SAME_VIDEO_TRANSITION_SECONDS = 1.45;
 const CROSS_TRANSITION_SECONDS = 0.95;
-const BOTTLE_MODEL_SRC = "/models/saptambu-bottle.glb";
+const BOTTLE_MODEL_SRC = "/models/saptambu-bottle-web.glb";
 const SCROLL_DISTANCE_PER_STEP_SVH = 220;
 const SCROLL_STAGE_HEIGHT_SVH = 100 + (stepTimeline.length - 1) * SCROLL_DISTANCE_PER_STEP_SVH;
 
@@ -482,9 +482,9 @@ export function VideoSequenceHome() {
 
     const syncLoadProgress = () => {
       const nextProgress =
-        loadingParts.setup * 8 +
-        loadingParts.video * 17 +
-        loadingParts.bottle * 75;
+        loadingParts.setup * 18 +
+        loadingParts.video * 67 +
+        loadingParts.bottle * 15;
       setLoaderProgress((current) => Math.max(current, clamp(nextProgress, 0, 100)));
     };
 
@@ -995,7 +995,7 @@ export function VideoSequenceHome() {
         video.addEventListener("error", ready, { once: true });
         video.addEventListener("progress", updateProgress);
         video.load();
-        window.setTimeout(ready, index === 0 ? 9000 : 5200);
+        window.setTimeout(ready, index === 0 ? 3200 : 5200);
       });
 
       videoReadyPromises.set(index, promise);
@@ -1166,6 +1166,7 @@ export function VideoSequenceHome() {
 
     const finishLoading = () => {
       if (disposed) return;
+      setLoaderProgress(100);
       window.setTimeout(() => {
         assetsReady = true;
         setStaticStep(0, true);
@@ -1178,22 +1179,22 @@ export function VideoSequenceHome() {
     setStaticStep(0, true);
     setLoadPart("setup", 1);
 
-    void prepareVideo(0, (progress) => setLoadPart("video", progress)).catch((error) => {
-      console.warn("Saptambu first video preload failed", error);
-      setLoadPart("video", 1);
-    });
+    void prepareVideo(0, (progress) => setLoadPart("video", progress))
+      .catch((error) => {
+        console.warn("Saptambu first video preload failed", error);
+        setLoadPart("video", 1);
+      })
+      .finally(() => {
+        finishLoading();
+      });
 
     void initBottleLayer((progress) => setLoadPart("bottle", progress))
       .then(() => {
         setLoadPart("bottle", 1);
-        setLoaderProgress(100);
-        finishLoading();
       })
       .catch((error) => {
         console.warn("Saptambu bottle load failed", error);
         setLoadPart("bottle", 1);
-        setLoaderProgress(100);
-        finishLoading();
       });
 
     window.addEventListener("resize", onResize);
