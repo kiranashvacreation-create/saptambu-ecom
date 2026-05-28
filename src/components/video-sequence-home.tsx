@@ -290,6 +290,8 @@ const HOME_FILM_END_TIME = 29.2;
 const LABEL_FRONT_Y = 0;
 const MIN_SAME_VIDEO_TRANSITION_SECONDS = 0.85;
 const MAX_SAME_VIDEO_TRANSITION_SECONDS = 1.45;
+const VIDEO_SYNC_THRESHOLD_SECONDS = 0.32;
+const VIDEO_STALL_DEBOUNCE_MS = 220;
 const BOTTLE_MODEL_SRC = deliveryAssets.models.originalBottle;
 const BOTTLE_MODEL_FALLBACK_SRC = localMediaFallbacks.models.originalBottle;
 const BOTTLE_LOAD_TIMEOUT_MS = 60_000;
@@ -450,8 +452,13 @@ export function VideoSequenceHome() {
     let renderer: THREE.WebGLRenderer | null = null;
     let rimLight: THREE.DirectionalLight | null = null;
     let bottleTween: gsap.core.Tween | null = null;
+    let catchUpTimer = 0;
+    let confirmedFilmTime = stepTimeline[0].filmTime;
+    let requestedFilmTime = stepTimeline[0].filmTime;
     let scrollFrame = 0;
     let transitionTimer = 0;
+    let videoFrameCallbackId: number | null = null;
+    let videoHasFailed = false;
     const videoTweens = new Map<HTMLVideoElement, gsap.core.Tween>();
     const readyVideoIndexes = new Set<number>();
     const videoReadyPromises = new Map<number, Promise<void>>();
@@ -501,6 +508,12 @@ export function VideoSequenceHome() {
     const { dracoLoader, loader: gltfLoader } = createGltfLoader();
 
     const getTextNodes = () => Array.from(root.querySelectorAll<HTMLDivElement>("[data-step-panel]"));
+
+    const setVideoCatchingUp = (catchingUp: boolean) => {
+      root.dataset.videoCatchingUp = catchingUp ? "true" : "false";
+    };
+
+    setVideoCatchingUp(false);
 
     const setMaterialOpacity = (material: THREE.Material, opacity: number) => {
       if (!materialBase.has(material)) {
@@ -745,6 +758,51 @@ export function VideoSequenceHome() {
       return closestIndex;
     };
 
+    const isVideoCaughtUp = (targetTime = requestedFilmTime) =>
+      Math.abs(targetTime - confirmedFilmTime) <= VIDEO_SYNC_THRESHOLD_SECONDS;
+
+    const isVisibleStateCaughtUp = () =>
+      findStepForFilmTime(requestedFilmTime) === activeStep && isVideoCaughtUp();
+
+    const updateCatchUpVeil = () => {
+      if (disposed || videoHasFailed || !assetsReady || isVisibleStateCaughtUp()) {
+        window.clearTimeout(catchUpTimer);
+        catchUpTimer = 0;
+        setVideoCatchingUp(false);
+        return;
+      }
+
+      if (catchUpTimer || root.dataset.videoCatchingUp === "true") return;
+      catchUpTimer = window.setTimeout(() => {
+        catchUpTimer = 0;
+        if (!disposed && assetsReady && !videoHasFailed && !isVisibleStateCaughtUp()) {
+          setVideoCatchingUp(true);
+        }
+      }, VIDEO_STALL_DEBOUNCE_MS);
+    };
+
+    const syncVisibleStepToConfirmedVideo = (mediaTime: number, force = false) => {
+      confirmedFilmTime = clamp(mediaTime, VIDEO_START_TIME, HOME_FILM_END_TIME);
+      updateCatchUpVeil();
+      if (!assetsReady || videoHasFailed) return;
+
+      const confirmedStepIndex = findStepForFilmTime(confirmedFilmTime);
+      if (force || isVideoCaughtUp() || confirmedStepIndex !== activeStep) {
+        goToStep(confirmedStepIndex);
+        updateCatchUpVeil();
+      }
+    };
+
+    const reportVideoFailure = (message = "The film could not load. Check your connection and retry.") => {
+      if (disposed || videoHasFailed) return;
+      videoHasFailed = true;
+      assetsReady = false;
+      setVideoCatchingUp(false);
+      window.clearTimeout(catchUpTimer);
+      setBottleLoadError(message);
+      setIsLoading(true);
+    };
+
     const scrubHomeFilmTo = (filmTime: number, duration = 0.18, immediate = false) => {
       const video = videoNodes[0];
       if (!video) return;
@@ -773,6 +831,9 @@ export function VideoSequenceHome() {
 
     const setStaticStep = (stepIndex: number, immediate = false) => {
       const step = stepTimeline[stepIndex];
+      requestedFilmTime = step.filmTime;
+      confirmedFilmTime = step.filmTime;
+      updateCatchUpVeil();
       activeStep = stepIndex;
       updateRootDataset(stepIndex);
       updateProgress(stepIndex, immediate ? 0 : 0.55);
@@ -839,11 +900,11 @@ export function VideoSequenceHome() {
       const scrollableDistance = Math.max(root.offsetHeight - window.innerHeight, 1);
       const scrollProgress = clamp(-root.getBoundingClientRect().top / scrollableDistance, 0, 1);
       const filmTime = clamp(scrollProgress * HOME_FILM_DURATION_SECONDS, VIDEO_START_TIME, HOME_FILM_END_TIME);
-      const nextStepIndex = findStepForFilmTime(filmTime);
 
+      requestedFilmTime = filmTime;
       updateProgressValue(scrollProgress, 0.12);
       scrubHomeFilmTo(filmTime, isLowEndDevice ? 0.22 : 0.16);
-      goToStep(nextStepIndex);
+      updateCatchUpVeil();
     };
 
     const requestScrollUpdate = () => {
@@ -868,8 +929,9 @@ export function VideoSequenceHome() {
       const existing = videoReadyPromises.get(index);
       if (existing) return existing;
 
-      const promise = new Promise<void>((resolve) => {
+      const promise = new Promise<void>((resolve, reject) => {
         let resolved = false;
+        let readinessTimeout = 0;
         video.preload = "auto";
         const updateProgress = () => {
           if (!onProgress || !video.duration || Number.isNaN(video.duration) || video.buffered.length === 0) return;
@@ -878,6 +940,7 @@ export function VideoSequenceHome() {
         };
 
         const cleanup = () => {
+          window.clearTimeout(readinessTimeout);
           video.removeEventListener("loadeddata", ready);
           video.removeEventListener("canplay", ready);
           video.removeEventListener("error", onError);
@@ -898,7 +961,10 @@ export function VideoSequenceHome() {
         };
 
         const onError = () => {
-          ready();
+          if (resolved) return;
+          resolved = true;
+          cleanup();
+          reject(new Error("Saptambu film failed to load."));
         };
 
         if (video.readyState >= 2 && video.duration) {
@@ -911,7 +977,12 @@ export function VideoSequenceHome() {
         video.addEventListener("error", onError);
         video.addEventListener("progress", updateProgress);
         video.load();
-        window.setTimeout(ready, index === 0 ? 3200 : 5200);
+        readinessTimeout = window.setTimeout(() => {
+          if (resolved) return;
+          resolved = true;
+          cleanup();
+          reject(new Error("Saptambu film load timed out."));
+        }, index === 0 ? 12_000 : 16_000);
       });
 
       videoReadyPromises.set(index, promise);
@@ -1124,7 +1195,8 @@ export function VideoSequenceHome() {
     const firstVideoReady = prepareVideo(0, (progress) => setLoadPart("video", progress))
       .catch((error) => {
         console.warn("Saptambu first video preload failed", error);
-        setLoadPart("video", 1);
+        reportVideoFailure();
+        throw error;
       });
 
     const bottleReady = initBottleLayer((progress) => setLoadPart("bottle", progress))
@@ -1140,6 +1212,37 @@ export function VideoSequenceHome() {
       });
 
     void Promise.all([firstVideoReady, bottleReady]).then(finishLoading).catch(() => undefined);
+
+    const mainVideo = videoNodes[0];
+    const hasVideoFrameCallback = Boolean(mainVideo?.requestVideoFrameCallback);
+    const confirmFromCurrentVideoFrame = () => {
+      if (!mainVideo || disposed || videoHasFailed) return;
+      syncVisibleStepToConfirmedVideo(mainVideo.currentTime);
+    };
+    const confirmAfterPaint = () => {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(confirmFromCurrentVideoFrame);
+      });
+    };
+    const scheduleVideoFrameConfirmation = () => {
+      if (!mainVideo || disposed || !mainVideo.requestVideoFrameCallback) return;
+      videoFrameCallbackId = mainVideo.requestVideoFrameCallback((_now, metadata) => {
+        videoFrameCallbackId = null;
+        syncVisibleStepToConfirmedVideo(metadata.mediaTime);
+        scheduleVideoFrameConfirmation();
+      });
+    };
+    const onRuntimeVideoError = () => {
+      reportVideoFailure("The film stopped loading. Check your connection and retry.");
+    };
+
+    if (mainVideo) {
+      mainVideo.addEventListener("seeked", confirmAfterPaint);
+      mainVideo.addEventListener("loadeddata", confirmAfterPaint);
+      mainVideo.addEventListener("timeupdate", hasVideoFrameCallback ? updateCatchUpVeil : confirmAfterPaint);
+      mainVideo.addEventListener("error", onRuntimeVideoError);
+      if (hasVideoFrameCallback) scheduleVideoFrameConfirmation();
+    }
 
     window.addEventListener("resize", onResize);
     if (enableCustomCursor) {
@@ -1160,7 +1263,17 @@ export function VideoSequenceHome() {
       window.cancelAnimationFrame(cursorFrame);
       window.cancelAnimationFrame(renderFrame);
       window.cancelAnimationFrame(scrollFrame);
+      window.clearTimeout(catchUpTimer);
       window.clearTimeout(transitionTimer);
+      if (mainVideo) {
+        mainVideo.removeEventListener("seeked", confirmAfterPaint);
+        mainVideo.removeEventListener("loadeddata", confirmAfterPaint);
+        mainVideo.removeEventListener("timeupdate", hasVideoFrameCallback ? updateCatchUpVeil : confirmAfterPaint);
+        mainVideo.removeEventListener("error", onRuntimeVideoError);
+        if (videoFrameCallbackId !== null && mainVideo.cancelVideoFrameCallback) {
+          mainVideo.cancelVideoFrameCallback(videoFrameCallbackId);
+        }
+      }
       if (enableCustomCursor) window.removeEventListener("mousemove", moveCursor);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("scroll", requestScrollUpdate);
@@ -1207,6 +1320,17 @@ export function VideoSequenceHome() {
         <div className="pointer-events-none absolute inset-0 z-10 opacity-[0.022] mix-blend-overlay [background-image:url('data:image/svg+xml,%3Csvg_xmlns=%22http://www.w3.org/2000/svg%22_width=%22300%22_height=%22300%22%3E%3Cfilter_id=%22n%22%3E%3CfeTurbulence_type=%22fractalNoise%22_baseFrequency=%220.85%22_numOctaves=%224%22_stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect_width=%22300%22_height=%22300%22_filter=%22url(%23n)%22/%3E%3C/svg%3E')] [background-size:200px_200px]" />
 
         <canvas ref={bottleCanvasRef} className="pointer-events-none absolute inset-0 z-20 h-full w-full opacity-0" data-bottle-canvas />
+
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-[35] opacity-0 transition-opacity duration-300"
+          data-sync-veil
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_74%_58%_at_50%_48%,rgba(244,234,215,0.08),rgba(5,6,9,0.34)_70%,rgba(5,6,9,0.58)_100%)] backdrop-blur-[1.5px]" />
+          <div className="absolute inset-x-[18%] bottom-[calc(2.75svh+1.45rem)] h-px overflow-hidden bg-[#d2a85c]/18 md:bottom-[calc(5vh+2rem)]">
+            <div className="h-full w-1/2 animate-[saptambu-sync-sheen_1.15s_ease-in-out_infinite] bg-[linear-gradient(90deg,transparent,#f0d79c,transparent)]" />
+          </div>
+        </div>
 
         <Link
           aria-label="Skip to Products"
@@ -1359,6 +1483,25 @@ export function VideoSequenceHome() {
             opacity: 1;
             transform: scaleX(1);
           }
+        }
+
+        @keyframes saptambu-sync-sheen {
+          0% {
+            opacity: 0;
+            transform: translateX(-120%);
+          }
+          45%,
+          65% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+            transform: translateX(240%);
+          }
+        }
+
+        :global(.saptambu-home[data-video-catching-up="true"] [data-sync-veil]) {
+          opacity: 1 !important;
         }
 
         :global(section[data-active-step="11"] .essence-product-cta) {
