@@ -294,7 +294,9 @@ const BOTTLE_MODEL_SRC = deliveryAssets.models.originalBottle;
 const BOTTLE_MODEL_FALLBACK_SRC = localMediaFallbacks.models.originalBottle;
 const BOTTLE_LOAD_TIMEOUT_MS = 60_000;
 const SCROLL_DISTANCE_PER_STEP_SVH = 220;
+const MOBILE_SCROLL_DISTANCE_PER_STEP_SVH = 178;
 const SCROLL_STAGE_HEIGHT_SVH = 100 + (stepTimeline.length - 1) * SCROLL_DISTANCE_PER_STEP_SVH;
+const MOBILE_SCROLL_STAGE_HEIGHT_SVH = 100 + (stepTimeline.length - 1) * MOBILE_SCROLL_DISTANCE_PER_STEP_SVH;
 
 const rootStyle = {
   "--left-gradient-opacity": "1",
@@ -330,23 +332,23 @@ function setVideoTime(video: HTMLVideoElement, filmTime: number, force = false) 
 
 function getTextPanelClass(layout: ChapterLayout) {
   const base =
-    "pointer-events-none absolute z-40 min-w-0 overflow-hidden break-words will-change-[transform,opacity,filter]";
+    "saptambu-step-panel pointer-events-none absolute z-40 min-w-0 overflow-hidden break-words will-change-[transform,opacity,filter]";
 
   if (layout === "right") {
-    return `${base} right-[clamp(1rem,4.6vw,7rem)] top-1/2 w-[min(17rem,44vw)] text-right sm:right-[clamp(1.4rem,7vw,7rem)] sm:w-[min(33rem,calc(100vw-2.8rem))] md:w-[min(33rem,38vw)]`;
+    return `${base} left-[clamp(1rem,5vw,1.35rem)] right-[clamp(1rem,5vw,1.35rem)] top-[clamp(12rem,36svh,19rem)] w-auto max-w-none overflow-visible text-left md:left-auto md:right-[clamp(1.4rem,7vw,7rem)] md:top-1/2 md:w-[min(33rem,38vw)] md:overflow-hidden md:text-right`;
   }
 
   if (layout === "split") {
-    return `${base} inset-x-[clamp(1rem,5vw,6rem)] top-[24vh] grid gap-3 text-center sm:gap-6 md:top-1/2 md:grid-cols-[minmax(0,0.84fr)_minmax(0,0.68fr)] md:items-center md:text-left`;
+    return `${base} inset-x-[clamp(1rem,5vw,1.35rem)] top-[clamp(7.25rem,20svh,12rem)] grid gap-2.5 overflow-visible text-center md:inset-x-[clamp(1rem,5vw,6rem)] md:top-1/2 md:grid-cols-[minmax(0,0.84fr)_minmax(0,0.68fr)] md:items-center md:gap-6 md:overflow-hidden md:text-left`;
   }
 
-  return `${base} left-[clamp(1rem,4.6vw,7rem)] top-1/2 w-[min(17rem,44vw)] text-left sm:left-[clamp(1.4rem,7vw,7rem)] sm:w-[min(33rem,calc(100vw-2.8rem))] md:w-[min(33rem,38vw)]`;
+  return `${base} left-[clamp(1rem,5vw,1.35rem)] right-[clamp(1rem,5vw,1.35rem)] top-[clamp(12rem,36svh,19rem)] w-auto max-w-none overflow-visible text-left md:left-[clamp(1.4rem,7vw,7rem)] md:right-auto md:top-1/2 md:w-[min(33rem,38vw)] md:overflow-hidden`;
 }
 
 function getBottlePoseForStep(step: StepBeat): BottlePose {
   const mobile = typeof window !== "undefined" && window.innerWidth < 768;
   const sideX = step.bottleSide === "left" ? -0.92 : step.bottleSide === "center" ? 0 : 0.92;
-  const mobileX = step.bottleSide === "left" ? -0.24 : step.bottleSide === "center" ? 0 : 0.24;
+  const mobileX = step.bottleSide === "center" ? 0 : 0.38;
 
   if (step.eyebrow === "01") {
     return {
@@ -354,10 +356,10 @@ function getBottlePoseForStep(step: StepBeat): BottlePose {
       rotationX: mobile ? 0.01 : -0.01,
       rotationY: LABEL_FRONT_Y + (mobile ? 0.01 : 0.028),
       rotationZ: -0.045,
-      scale: mobile ? 0.52 : 0.62,
+      scale: mobile ? 0.46 : 0.62,
       x: mobile ? mobileX : sideX,
-      y: mobile ? -0.1 : -0.08,
-      z: mobile ? -0.5 : -0.34,
+      y: mobile ? -0.58 : -0.08,
+      z: mobile ? -0.58 : -0.34,
     };
   }
 
@@ -367,10 +369,10 @@ function getBottlePoseForStep(step: StepBeat): BottlePose {
       rotationX: mobile ? 0.01 : -0.015,
       rotationY: LABEL_FRONT_Y - 0.015,
       rotationZ: -0.08,
-      scale: mobile ? 0.68 : 0.95,
+      scale: mobile ? 0.58 : 0.95,
       x: 0,
-      y: mobile ? -0.06 : -0.04,
-      z: mobile ? -0.44 : 0.08,
+      y: mobile ? -0.62 : -0.04,
+      z: mobile ? -0.5 : 0.08,
     };
   }
 
@@ -379,10 +381,10 @@ function getBottlePoseForStep(step: StepBeat): BottlePose {
     rotationX: mobile ? 0.005 : -0.012,
     rotationY: LABEL_FRONT_Y + (step.bottleSide === "left" ? -0.04 : 0.04),
     rotationZ: step.bottleSide === "left" ? 0.04 : -0.05,
-    scale: mobile ? 0.5 : step.eyebrow === "09" ? 0.72 : 0.68,
+    scale: mobile ? 0.44 : step.eyebrow === "09" ? 0.72 : 0.68,
     x: mobile ? mobileX : sideX,
-    y: mobile ? -0.1 : -0.12,
-    z: mobile ? -0.48 : -0.12,
+    y: mobile ? -0.6 : -0.12,
+    z: mobile ? -0.56 : -0.12,
   };
 }
 
@@ -525,6 +527,18 @@ export function VideoSequenceHome() {
       root.dataset.activeStep = String(stepIndex + 1);
       root.dataset.activeTitle = stepTimeline[stepIndex].title;
       root.dataset.activeVideo = "1";
+
+      const productCta = root.querySelector<HTMLAnchorElement>(".essence-product-cta");
+      if (productCta) {
+        const isFinalStep = stepIndex === stepTimeline.length - 1;
+        productCta.style.setProperty("opacity", isFinalStep ? "1" : "0", "important");
+        productCta.style.setProperty("pointer-events", isFinalStep ? "auto" : "none", "important");
+        productCta.style.setProperty(
+          "transition-property",
+          "background-color, border-color, color, transform, box-shadow",
+          "important",
+        );
+      }
     };
 
     const updateProgressValue = (value: number, duration = prefersReducedMotion ? 0 : 0.55) => {
@@ -809,11 +823,13 @@ export function VideoSequenceHome() {
 
       const textNodes = getTextNodes();
       gsap.killTweensOf(textNodes);
-      showStepText(clampedIndex, false, previousStepIndex);
+      showStepText(clampedIndex, isLowEndDevice, previousStepIndex);
 
-      transitionTimer = window.setTimeout(() => {
-        showStepText(clampedIndex, true);
-      }, duration * 1000 + 140);
+      if (!isLowEndDevice) {
+        transitionTimer = window.setTimeout(() => {
+          showStepText(clampedIndex, true);
+        }, duration * 1000 + 140);
+      }
     };
 
     const updateFromScroll = () => {
@@ -903,7 +919,13 @@ export function VideoSequenceHome() {
     };
 
     const initBottleLayer = (onProgress?: (progress: number) => void) => {
-      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, canvas });
+      try {
+        renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, canvas });
+      } catch (error) {
+        onProgress?.(1);
+        return Promise.reject(error instanceof Error ? error : new Error(String(error)));
+      }
+
       renderer.setPixelRatio(renderPixelRatio());
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -1149,11 +1171,11 @@ export function VideoSequenceHome() {
   return (
     <section
       ref={rootRef}
-      className="relative cursor-none bg-[#050609] text-[#f4ead7]"
+      className="saptambu-home relative bg-[#050609] text-[#f4ead7] md:cursor-none"
       data-active-step="1"
-      style={{ ...rootStyle, minHeight: `${SCROLL_STAGE_HEIGHT_SVH}svh` }}
+      style={rootStyle}
     >
-      <div className="sticky top-0 h-[100svh] overflow-hidden bg-black">
+      <div className="sticky top-0 h-[100dvh] min-h-[100svh] overflow-hidden bg-black">
         <div ref={trackRef} className="absolute inset-0 h-full w-full" data-video-track>
           <div className="absolute inset-0 h-full w-full overflow-hidden bg-black" data-video-panel style={{ opacity: 1, zIndex: 2 }}>
             <video
@@ -1161,7 +1183,7 @@ export function VideoSequenceHome() {
                 videoRefs.current[0] = node;
               }}
               aria-label="Saptambu sacred waters film"
-              className="h-full w-full object-cover transition-[filter] duration-700 ease-out [filter:brightness(var(--video-brightness))_contrast(var(--video-contrast))_saturate(var(--video-saturation))_hue-rotate(var(--video-hue))]"
+              className="saptambu-home-video h-full w-full object-cover transition-[filter] duration-700 ease-out [filter:brightness(var(--video-brightness))_contrast(var(--video-contrast))_saturate(var(--video-saturation))_hue-rotate(var(--video-hue))]"
               disablePictureInPicture
               muted
               playsInline
@@ -1205,6 +1227,7 @@ export function VideoSequenceHome() {
           <div
             className={getTextPanelClass(chapter.layout)}
             data-step-panel
+            data-step-layout={chapter.layout}
             data-step-title={chapter.title}
             data-step-video="1"
             key={chapter.eyebrow}
@@ -1223,11 +1246,11 @@ export function VideoSequenceHome() {
                   <div className="max-w-full whitespace-normal break-words font-mono text-[0.55rem] uppercase leading-relaxed tracking-[0.18em] text-[#d2a85c]/78 sm:text-[0.62rem] sm:tracking-[0.46em]">
                     {chapter.phase}
                   </div>
-                  <h2 className="mx-auto mt-3 max-w-[18rem] text-balance break-words font-serif text-[clamp(1.65rem,9vw,3rem)] font-light leading-[1.02] tracking-[0.012em] text-[#f4ead7] sm:mt-4 sm:max-w-[27rem] sm:text-[clamp(2.05rem,5vw,4.8rem)] sm:leading-[0.92] md:mx-0">
+                  <h2 className="mx-auto mt-3 max-w-[min(18.5rem,86vw)] text-balance break-words font-serif text-[clamp(2.05rem,10vw,2.85rem)] font-light leading-[0.98] tracking-[0.012em] text-[#f4ead7] sm:mt-4 sm:max-w-[27rem] sm:text-[clamp(2.05rem,5vw,4.8rem)] sm:leading-[0.92] md:mx-0">
                     {chapter.title}
                   </h2>
                 </div>
-                <p className="mx-auto max-w-[18rem] self-center justify-self-center break-words text-center font-serif text-[clamp(0.82rem,3.8vw,1.05rem)] italic leading-relaxed tracking-[0.015em] text-[#f4ead7]/70 sm:max-w-[24rem] sm:text-[clamp(0.96rem,4.8vw,1.28rem)] sm:tracking-[0.075em] md:mx-0 md:justify-self-end md:text-right">
+                <p className="mx-auto max-w-[min(17.2rem,78vw)] self-center justify-self-center break-words text-center font-serif text-[clamp(0.9rem,4vw,1.08rem)] italic leading-[1.55] tracking-[0.015em] text-[#f4ead7]/70 sm:max-w-[24rem] sm:text-[clamp(0.96rem,4.8vw,1.28rem)] sm:leading-relaxed sm:tracking-[0.075em] md:mx-0 md:justify-self-end md:text-right">
                   {chapter.body}
                 </p>
               </>
@@ -1236,10 +1259,10 @@ export function VideoSequenceHome() {
                 <div className="max-w-full whitespace-normal break-words font-mono text-[0.55rem] uppercase leading-relaxed tracking-[0.18em] text-[#d2a85c]/78 sm:text-[0.62rem] sm:tracking-[0.46em]">
                   {chapter.phase}
                 </div>
-                <h2 className="mt-3 max-w-[16rem] text-balance break-words font-serif text-[clamp(1.55rem,8vw,2.7rem)] font-light leading-[1.04] tracking-[0.012em] text-[#f4ead7] sm:mt-4 sm:max-w-[31rem] sm:text-[clamp(2.05rem,5.1vw,4.95rem)] sm:leading-[0.92]">
+                <h2 className="mt-3 max-w-[min(18.5rem,86vw)] text-balance break-words font-serif text-[clamp(2.05rem,10vw,2.85rem)] font-light leading-[0.98] tracking-[0.012em] text-[#f4ead7] sm:mt-4 sm:max-w-[31rem] sm:text-[clamp(2.05rem,5.1vw,4.95rem)] sm:leading-[0.92]">
                   {chapter.title}
                 </h2>
-                <p className="mt-3 max-w-[16rem] break-words font-serif text-[clamp(0.82rem,3.8vw,1.04rem)] italic leading-relaxed tracking-[0.015em] text-[#f4ead7]/68 sm:mt-5 sm:max-w-[26rem] sm:text-[clamp(0.98rem,1.42vw,1.24rem)] sm:tracking-[0.075em]">
+                <p className="mt-3 max-w-[min(17.2rem,78vw)] break-words font-serif text-[clamp(0.9rem,4vw,1.08rem)] italic leading-[1.55] tracking-[0.015em] text-[#f4ead7]/68 sm:mt-5 sm:max-w-[26rem] sm:text-[clamp(0.98rem,1.42vw,1.24rem)] sm:leading-relaxed sm:tracking-[0.075em]">
                   {chapter.body}
                 </p>
               </>
@@ -1249,7 +1272,12 @@ export function VideoSequenceHome() {
 
         <Link
           href="/collections/all"
-          className="essence-product-cta focus-ring pointer-events-none absolute left-1/2 top-[calc(50%+32vh)] z-[46] max-w-[calc(100vw-2rem)] -translate-x-1/2 translate-y-3 scale-95 overflow-hidden whitespace-normal rounded-full border border-[#ffe8ae]/70 bg-[linear-gradient(135deg,#fff0bf_0%,#e2b65d_42%,#a96624_100%)] px-5 py-3.5 text-center font-mono text-[0.58rem] font-bold uppercase leading-snug tracking-[0.16em] text-[#180e06] opacity-0 shadow-[0_0_24px_rgba(210,168,92,0.32),0_16px_42px_rgba(0,0,0,0.36)] backdrop-blur-md transition duration-500 hover:border-[#fff7d3] hover:shadow-[0_0_42px_rgba(240,215,156,0.52),0_18px_56px_rgba(0,0,0,0.42)] sm:px-8 sm:text-[0.64rem] sm:tracking-[0.3em] md:top-[calc(50%+34vh)]"
+          className="essence-product-cta focus-ring pointer-events-none absolute bottom-[calc(env(safe-area-inset-bottom)+4.85rem)] left-1/2 top-auto z-[46] max-w-[calc(100vw-2rem)] -translate-x-1/2 translate-y-3 scale-95 overflow-hidden whitespace-normal rounded-full border border-[#ffe8ae]/70 bg-[linear-gradient(135deg,#fff0bf_0%,#e2b65d_42%,#a96624_100%)] px-5 py-3.5 text-center font-mono text-[0.58rem] font-bold uppercase leading-snug tracking-[0.16em] text-[#180e06] shadow-[0_0_24px_rgba(210,168,92,0.32),0_16px_42px_rgba(0,0,0,0.36)] backdrop-blur-md transition-[background-color,border-color,color,transform,box-shadow] duration-200 hover:border-[#fff7d3] hover:shadow-[0_0_42px_rgba(240,215,156,0.52),0_18px_56px_rgba(0,0,0,0.42)] sm:px-8 sm:text-[0.64rem] sm:tracking-[0.3em] md:bottom-auto md:top-[calc(50%+34vh)]"
+          style={{
+            opacity: 0,
+            pointerEvents: "none",
+            transitionProperty: "background-color, border-color, color, transform, box-shadow",
+          }}
         >
           <span className="relative z-10 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
             <span className="h-1.5 w-1.5 rounded-full bg-[#fff8d2] shadow-[0_0_16px_rgba(255,248,210,0.95)]" />
@@ -1257,9 +1285,9 @@ export function VideoSequenceHome() {
           </span>
         </Link>
 
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-[55] h-[5vh] bg-[#050609]" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[55] h-[5vh] bg-[#050609]" />
-        <div className="pointer-events-none absolute inset-x-3 bottom-[calc(5vh+0.8rem)] z-[57] h-px bg-[#d2a85c]/18">
+        <div className="saptambu-cinema-band-top pointer-events-none absolute inset-x-0 top-0 z-[55] h-[2.75svh] bg-[#050609] md:h-[5vh]" />
+        <div className="saptambu-cinema-band-bottom pointer-events-none absolute inset-x-0 bottom-0 z-[55] h-[2.75svh] bg-[#050609] md:h-[5vh]" />
+        <div className="saptambu-progress-track pointer-events-none absolute inset-x-3 bottom-[calc(2.75svh+0.8rem)] z-[57] h-px bg-[#d2a85c]/18 md:bottom-[calc(5vh+0.8rem)]">
           <div
             ref={progressRef}
             className="h-full origin-left scale-x-0 bg-[linear-gradient(90deg,#d2a85c,#f0d79c,transparent)]"
@@ -1267,7 +1295,7 @@ export function VideoSequenceHome() {
           />
         </div>
 
-        <div className="pointer-events-none absolute bottom-[calc(5vh+1.45rem)] left-6 z-[57] grid h-10 w-10 place-items-center rounded-full border border-[#f4ead7]/18 bg-black/22 font-mono text-xs text-[#f4ead7]/86 shadow-[0_0_18px_rgba(0,0,0,0.45)]">
+        <div className="pointer-events-none absolute bottom-[calc(5vh+1.45rem)] left-6 z-[57] hidden h-10 w-10 place-items-center rounded-full border border-[#f4ead7]/18 bg-black/22 font-mono text-xs text-[#f4ead7]/86 shadow-[0_0_18px_rgba(0,0,0,0.45)] md:grid">
           N
         </div>
 
@@ -1317,6 +1345,10 @@ export function VideoSequenceHome() {
       </div>
 
       <style jsx>{`
+        section {
+          min-height: calc(${SCROLL_STAGE_HEIGHT_SVH} * 1svh);
+        }
+
         @keyframes saptambhu-loader {
           0%,
           100% {
@@ -1399,6 +1431,79 @@ export function VideoSequenceHome() {
         @media (max-width: 768px) {
           section {
             cursor: auto;
+          }
+        }
+
+        @media (max-width: 767px) {
+          section {
+            min-height: calc(${MOBILE_SCROLL_STAGE_HEIGHT_SVH} * 1svh);
+          }
+
+          :global(.saptambu-home-video) {
+            object-position: 50% 50%;
+          }
+
+          :global(.saptambu-home a[aria-label="Skip to Products"]) {
+            top: calc(env(safe-area-inset-top) + 0.85rem) !important;
+            right: 0.85rem !important;
+            padding: 0.55rem 0.78rem !important;
+            font-size: 0.52rem !important;
+            letter-spacing: 0.11em !important;
+          }
+
+          :global(.saptambu-home .saptambu-step-panel) {
+            left: clamp(1rem, 5vw, 1.35rem) !important;
+            right: clamp(1rem, 5vw, 1.35rem) !important;
+            top: clamp(12rem, 36svh, 19rem) !important;
+            width: auto !important;
+            max-width: none !important;
+            overflow: visible !important;
+            text-align: left !important;
+          }
+
+          :global(.saptambu-home .saptambu-step-panel[data-step-layout="split"]) {
+            top: clamp(7.25rem, 20svh, 12rem) !important;
+            display: grid;
+            gap: 0.62rem;
+            justify-items: center;
+            text-align: center !important;
+          }
+
+          :global(.saptambu-home .saptambu-step-panel > div:first-child) {
+            max-width: min(19rem, 86vw);
+          }
+
+          :global(.saptambu-home .saptambu-step-panel h2) {
+            max-width: min(18.5rem, 86vw) !important;
+            font-size: clamp(2.05rem, 10vw, 2.85rem) !important;
+            line-height: 0.98 !important;
+          }
+
+          :global(.saptambu-home .saptambu-step-panel p) {
+            max-width: min(17.2rem, 78vw) !important;
+            font-size: clamp(0.9rem, 4vw, 1.08rem) !important;
+            line-height: 1.55 !important;
+          }
+
+          :global(.saptambu-home .saptambu-step-panel[data-step-layout="split"] h2),
+          :global(.saptambu-home .saptambu-step-panel[data-step-layout="split"] p) {
+            margin-left: auto;
+            margin-right: auto;
+            text-align: center !important;
+          }
+
+          :global(.saptambu-home .essence-product-cta) {
+            top: auto !important;
+            bottom: calc(env(safe-area-inset-bottom) + 4.85rem) !important;
+            padding: 0.72rem 1.2rem !important;
+            font-size: 0.54rem !important;
+            letter-spacing: 0.14em !important;
+          }
+
+          :global(.saptambu-home[data-active-step="11"] .essence-product-cta) {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            transform: translate(-50%, 0) scale(1) !important;
           }
         }
       `}</style>

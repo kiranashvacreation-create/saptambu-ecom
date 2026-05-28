@@ -1,6 +1,6 @@
 const CLOUDINARY_BASE_URL = "https://res.cloudinary.com/dmzwaaf1h";
 const COMPRESSED_BOTTLE_VERSION = "draco-17919844";
-const HOME_FILM_VERSION = "smooth-film-20260527";
+const HOME_FILM_VERSION = "portrait-mobile-20260528";
 
 function cloudinaryVideo(path: string) {
   return `${CLOUDINARY_BASE_URL}/video/upload/${path}`;
