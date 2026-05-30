@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import { AmbientSound } from "@/components/ambient-sound";
 import { CartProvider } from "@/components/cart-provider";
 import { site } from "@/lib/site";
 
@@ -39,6 +40,7 @@ export default function RootLayout({
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />
+          <AmbientSound />
         </CartProvider>
       </body>
     </html>
