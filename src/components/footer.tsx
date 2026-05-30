@@ -1,14 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { site } from "@/lib/site";
 
 export function Footer() {
-  const pathname = usePathname();
-
-  if (pathname === "/") return null;
-
   return (
     <footer className="mt-20 border-t border-[var(--border)] bg-[#211b17] text-[#f8f2e8]">
       <div className="container-page grid gap-8 py-10 md:grid-cols-[1.4fr_1fr_1fr]">

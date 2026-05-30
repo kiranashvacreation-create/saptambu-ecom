@@ -21,8 +21,6 @@ export function Header() {
   const pathname = usePathname();
   const isHome = pathname === "/";
 
-  if (isHome) return null;
-
   function closeMenuSoon() {
     window.setTimeout(() => setOpen(false), 0);
   }
@@ -31,7 +29,7 @@ export function Header() {
     <header
       className={
         isHome
-          ? "absolute inset-x-0 top-0 z-40 border-b border-white/10 bg-[#080606]/30 text-white backdrop-blur-md"
+          ? "absolute inset-x-0 top-0 z-40 border-b border-[#e3d6c2] bg-[#fffaf0]/92 text-[#2d251c] backdrop-blur-md"
           : "sticky top-0 z-40 border-b border-[var(--border)] bg-[#fbfaf6]/95 backdrop-blur"
       }
     >
@@ -40,7 +38,7 @@ export function Header() {
           <span
             className={
               isHome
-                ? "grid h-10 w-10 place-items-center rounded-full bg-[#d0a052] font-semibold text-[#170f0b]"
+                ? "grid h-10 w-10 place-items-center rounded-full bg-[#c99324] font-semibold text-[#211408]"
                 : "grid h-10 w-10 place-items-center rounded-full bg-[#9b2f22] font-semibold text-white"
             }
           >
@@ -48,7 +46,7 @@ export function Header() {
           </span>
           <span>
             <span className="block text-lg font-semibold leading-5">Saptambu</span>
-            <span className={isHome ? "block text-xs text-[#d7c2aa]" : "block text-xs text-[#7a6a5a]"}>
+            <span className={isHome ? "block text-xs text-[#7a6a5a]" : "block text-xs text-[#7a6a5a]"}>
               Kiranashva Creation
             </span>
           </span>
@@ -57,12 +55,12 @@ export function Header() {
         <nav
           className={
             isHome
-              ? "hidden items-center gap-5 text-sm font-medium text-[#efe3d5] lg:flex"
+              ? "hidden items-center gap-5 text-sm font-medium text-[#54483f] lg:flex"
               : "hidden items-center gap-5 text-sm font-medium text-[#54483f] lg:flex"
           }
         >
           {links.map((link) => (
-            <Link key={link.href} href={link.href} className={isHome ? "hover:text-[#d0a052]" : "hover:text-[var(--accent)]"}>
+            <Link key={link.href} href={link.href} className={isHome ? "hover:text-[#b88424]" : "hover:text-[var(--accent)]"}>
               {link.label}
             </Link>
           ))}
@@ -73,7 +71,7 @@ export function Header() {
             href="/search"
             className={
               isHome
-                ? "focus-ring grid h-10 w-10 place-items-center rounded-full border border-white/18 bg-white/8"
+                ? "focus-ring grid h-10 w-10 place-items-center rounded-full border border-[#d8c8ae] bg-[#fffaf0]"
                 : "focus-ring grid h-10 w-10 place-items-center rounded-full border border-[var(--border)] bg-white"
             }
             aria-label="Search"
@@ -84,7 +82,7 @@ export function Header() {
             href="/cart"
             className={
               isHome
-                ? "focus-ring relative grid h-10 w-10 place-items-center rounded-full border border-white/18 bg-white/8"
+                ? "focus-ring relative grid h-10 w-10 place-items-center rounded-full border border-[#d8c8ae] bg-[#fffaf0]"
                 : "focus-ring relative grid h-10 w-10 place-items-center rounded-full border border-[var(--border)] bg-white"
             }
             aria-label="Cart"
@@ -100,7 +98,7 @@ export function Header() {
             type="button"
             className={
               isHome
-                ? "focus-ring grid h-10 w-10 place-items-center rounded-full border border-white/18 bg-white/8 lg:hidden"
+                ? "focus-ring grid h-10 w-10 place-items-center rounded-full border border-[#d8c8ae] bg-[#fffaf0] lg:hidden"
                 : "focus-ring grid h-10 w-10 place-items-center rounded-full border border-[var(--border)] bg-white lg:hidden"
             }
             onClick={() => setOpen((value) => !value)}
@@ -117,7 +115,7 @@ export function Header() {
           id="mobile-nav"
           className={
             isHome
-              ? "border-t border-white/10 bg-[#120f0f] px-4 py-4 text-white lg:hidden"
+              ? "border-t border-[#e3d6c2] bg-[#fffaf0] px-4 py-4 text-[#2d251c] lg:hidden"
               : "border-t border-[var(--border)] bg-white px-4 py-4 lg:hidden"
           }
         >
